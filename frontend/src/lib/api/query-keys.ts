@@ -17,4 +17,8 @@ export const queryKeys = {
     conditions: ["patients", "conditions"] as const,
   },
   dashboard: { all: ["dashboard"] as const },
+  users: {
+    all: ["users"] as const,
+    list: (params: object) => ["users", "list", params] as const,
+  },
 };

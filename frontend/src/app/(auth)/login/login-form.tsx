@@ -12,11 +12,12 @@ import { Input } from "@/components/ui/input";
 import { ApiError } from "@/lib/api/client";
 import { authApi } from "@/lib/api/endpoints";
 import { queryKeys } from "@/lib/api/query-keys";
+import { homeFor } from "@/lib/permissions";
 import { loginSchema, type LoginFormValues } from "@/lib/validations";
 
 /** Only allow same-site relative redirects. */
 function safeRedirect(from: string | null) {
-  return from && from.startsWith("/") && !from.startsWith("//") && !from.startsWith("/login") ? from : "/dashboard";
+  return from && from.startsWith("/") && !from.startsWith("//") && !from.startsWith("/login") ? from : null;
 }
 
 export function LoginForm() {
@@ -27,7 +28,7 @@ export function LoginForm() {
   const [formError, setFormError] = useState<string | null>(
     searchParams.get("expired") ? "Your session has ended. Please sign in again." : null,
   );
-  const redirectTo = safeRedirect(searchParams.get("from"));
+  const requested = safeRedirect(searchParams.get("from"));
 
   const {
     register,
@@ -39,16 +40,16 @@ export function LoginForm() {
   useEffect(() => {
     authApi
       .session()
-      .then(() => router.replace(redirectTo))
+      .then(({ user }) => router.replace(requested ?? homeFor(user.role)))
       .catch(() => undefined);
-  }, [redirectTo, router]);
+  }, [requested, router]);
 
   const onSubmit = handleSubmit(async ({ email, password }) => {
     setFormError(null);
     try {
-      const { admin } = await authApi.login(email, password);
-      queryClient.setQueryData(queryKeys.session, { admin });
-      router.replace(redirectTo);
+      const { user } = await authApi.login(email, password);
+      queryClient.setQueryData(queryKeys.session, { user });
+      router.replace(requested ?? homeFor(user.role));
     } catch (error) {
       setFormError(
         error instanceof ApiError && (error.status === 401 || error.status === 429)

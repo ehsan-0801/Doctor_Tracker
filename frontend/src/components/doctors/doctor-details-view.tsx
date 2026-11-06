@@ -9,6 +9,7 @@ import { Breadcrumbs } from "@/components/shared/breadcrumbs";
 import { EmptyState, ErrorState } from "@/components/shared/states";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useSession } from "@/hooks/use-session";
 import { ApiError } from "@/lib/api/client";
 import { doctorsApi } from "@/lib/api/endpoints";
 import { queryKeys } from "@/lib/api/query-keys";
@@ -31,6 +32,7 @@ function Detail({ icon: Icon, label, children }: { icon: typeof Mail; label: str
 
 export function DoctorDetailsView({ id }: { id: string }) {
   const [addOpen, setAddOpen] = useState(false);
+  const canAdd = useSession().can("patients:write");
   const doctor = useQuery({ queryKey: queryKeys.doctors.detail(id), queryFn: () => doctorsApi.get(id) });
   const d = doctor.data;
 
@@ -101,14 +103,16 @@ export function DoctorDetailsView({ id }: { id: string }) {
             <h2 id="patients-heading" className="text-lg font-semibold">Patients</h2>
             <p className="text-sm text-muted-foreground">Patients associated with this doctor.</p>
           </div>
-          <Button size="lg" className="h-10 px-4" onClick={() => setAddOpen(true)} disabled={!d}>
-            <Plus aria-hidden /> Add patient
-          </Button>
+          {canAdd && (
+            <Button size="lg" className="h-10 px-4" onClick={() => setAddOpen(true)} disabled={!d}>
+              <Plus aria-hidden /> Add patient
+            </Button>
+          )}
         </div>
         {d && <PatientsPanel doctor={d} />}
       </section>
 
-      {d && <PatientFormDialog open={addOpen} onOpenChange={setAddOpen} mode={{ kind: "create-for-doctor", doctor: d }} />}
+      {d && canAdd && <PatientFormDialog open={addOpen} onOpenChange={setAddOpen} mode={{ kind: "create-for-doctor", doctor: d }} />}
     </div>
   );
 }

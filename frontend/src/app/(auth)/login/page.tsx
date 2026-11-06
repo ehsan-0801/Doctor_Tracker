@@ -13,7 +13,7 @@ export default function LoginPage() {
           <Brand compact />
           <div className="space-y-1">
             <h1 className="text-2xl font-semibold">Doctor Tracker</h1>
-            <p className="text-sm text-muted-foreground">Sign in to the administration portal</p>
+            <p className="text-sm text-muted-foreground">Sign in to the hospital portal</p>
           </div>
         </div>
         <div className="rounded-xl border bg-card p-6 shadow-sm sm:p-8">
@@ -21,7 +21,7 @@ export default function LoginPage() {
             <LoginForm />
           </Suspense>
         </div>
-        <p className="mt-6 text-center text-xs text-muted-foreground">Authorized administrators only.</p>
+        <p className="mt-6 text-center text-xs text-muted-foreground">For hospital administrators, management, front-desk staff and doctors.</p>
       </div>
     </main>
   );

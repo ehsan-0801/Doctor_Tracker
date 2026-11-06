@@ -1,5 +1,4 @@
 import type {
-  Admin,
   ConditionCount,
   DashboardStats,
   Doctor,
@@ -10,16 +9,20 @@ import type {
   Patient,
   PatientListParams,
   PatientsPerDoctor,
+  Role,
+  SessionUser,
+  UserAccount,
+  UserListParams,
 } from "@/types/api";
 import type { DoctorFormValues, PatientFormValues } from "@/lib/validations";
 import { api } from "./client";
 
 export const authApi = {
   login: (email: string, password: string) =>
-    api.post<{ admin: Admin }>("/auth/login", { email, password }, { skipAuthRedirect: true }),
+    api.post<{ user: SessionUser }>("/auth/login", { email, password }, { skipAuthRedirect: true }),
   logout: () => api.post<null>("/auth/logout", undefined, { skipAuthRedirect: true }),
-  session: () => api.getQuiet<{ admin: Admin }>("/auth/session"),
-  sessionOrRedirect: () => api.get<{ admin: Admin }>("/auth/session"),
+  session: () => api.getQuiet<{ user: SessionUser }>("/auth/session"),
+  sessionOrRedirect: () => api.get<{ user: SessionUser }>("/auth/session"),
 };
 
 export const doctorsApi = {
@@ -48,4 +51,20 @@ export const dashboardApi = {
   patientsPerDoctor: (limit = 10) => api.get<PatientsPerDoctor[]>("/dashboard/patients-per-doctor", { limit }),
   registrations: (months = 12) => api.get<MonthlyRegistrations[]>("/dashboard/registrations", { months }),
   conditions: (limit = 6) => api.get<ConditionCount[]>("/dashboard/conditions", { limit }),
+};
+
+export interface UserFormInput {
+  name: string;
+  email: string;
+  role: Role;
+  password: string;
+  doctorId?: string;
+}
+
+export const usersApi = {
+  list: (params: UserListParams) => api.list<UserAccount>("/users", { ...params }),
+  create: (input: UserFormInput) => api.post<UserAccount>("/users", input),
+  update: (id: string, input: Partial<{ name: string; role: Role; active: boolean; doctorId: string | null }>) =>
+    api.patch<UserAccount>(`/users/${id}`, input),
+  resetPassword: (id: string, password: string) => api.post<null>(`/users/${id}/reset-password`, { password }),
 };

@@ -22,9 +22,30 @@ export interface Paginated<T> {
   pagination: Pagination;
 }
 
-export interface Admin {
+export type Role = "admin" | "management" | "staff" | "doctor";
+
+export interface SessionUser {
   id: string;
+  name: string;
   email: string;
+  role: Role;
+  doctorId: string | null;
+}
+
+export interface UserAccount {
+  _id: string;
+  name: string;
+  email: string;
+  role: Role;
+  active: boolean;
+  doctor: { _id: string; name: string; specialization: string } | null;
+  lastLoginAt: string | null;
+  createdAt: string;
+}
+
+export interface UserListParams extends ListParams {
+  role?: Role;
+  status?: "active" | "inactive";
 }
 
 export interface Doctor {

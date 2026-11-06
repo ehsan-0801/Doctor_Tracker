@@ -8,7 +8,7 @@ import { Schema, model } from "mongoose";
 const sessionSchema = new Schema(
   {
     tokenHash: { type: String, required: true, unique: true },
-    adminId: { type: Schema.Types.ObjectId, ref: "Admin", required: true, index: true },
+    userId: { type: Schema.Types.ObjectId, ref: "User", required: true, index: true },
     expiresAt: { type: Date, required: true },
   },
   { timestamps: true },

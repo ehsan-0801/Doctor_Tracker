@@ -1,12 +1,15 @@
 import { Router } from "express";
 import * as doctors from "../controllers/doctor.controller.js";
+import { requirePermission } from "../middleware/requireAuth.js";
+
+const read = requirePermission("doctors:read");
 
 export const doctorRouter = Router();
-doctorRouter.get("/", doctors.list);
-doctorRouter.post("/", doctors.create);
-doctorRouter.get("/filters", doctors.filterOptions);
-doctorRouter.get("/options", doctors.options);
-doctorRouter.get("/:id", doctors.getById);
-doctorRouter.get("/:id/patients", doctors.listPatients);
-doctorRouter.post("/:id/patients", doctors.addPatient);
-doctorRouter.delete("/:id/patients/:patientId", doctors.removePatient);
+doctorRouter.get("/", read, doctors.list);
+doctorRouter.post("/", requirePermission("doctors:create"), doctors.create);
+doctorRouter.get("/filters", read, doctors.filterOptions);
+doctorRouter.get("/options", read, doctors.options);
+doctorRouter.get("/:id", read, doctors.getById);
+doctorRouter.get("/:id/patients", requirePermission("patients:read"), doctors.listPatients);
+doctorRouter.post("/:id/patients", requirePermission("patients:write"), doctors.addPatient);
+doctorRouter.delete("/:id/patients/:patientId", requirePermission("patients:assign"), doctors.removePatient);

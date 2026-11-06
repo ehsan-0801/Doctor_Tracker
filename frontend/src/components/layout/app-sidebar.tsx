@@ -6,7 +6,8 @@ import { LogOut } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 import { Brand } from "./brand";
-import { isActivePath, NAV_ITEMS } from "./nav-items";
+import { useSession } from "@/hooks/use-session";
+import { isActivePath, navItemsFor } from "./nav-items";
 import { useLogout } from "./use-logout";
 
 /**
@@ -16,6 +17,8 @@ import { useLogout } from "./use-logout";
 export function AppSidebar() {
   const pathname = usePathname();
   const { logout, pending } = useLogout();
+  const session = useSession();
+  const items = navItemsFor(session.user?.role, session.can);
 
   return (
     <aside className="fixed inset-y-0 left-0 z-30 hidden w-[72px] flex-col border-r border-sidebar-border bg-sidebar text-sidebar-foreground md:flex lg:w-[250px]">
@@ -25,9 +28,9 @@ export function AppSidebar() {
       </div>
 
       <nav aria-label="Main navigation" className="flex-1 px-3 py-4">
-        <p className="mb-2 hidden px-3 text-[11px] font-semibold tracking-wider text-slate-500 uppercase lg:block">Menu</p>
+        <p className="mb-2 hidden px-3 text-[11px] font-semibold tracking-wider text-sidebar-foreground/70 uppercase lg:block">Menu</p>
         <ul className="space-y-1">
-          {NAV_ITEMS.map((item) => {
+          {items.map((item) => {
             const active = isActivePath(pathname, item.href);
             const link = (
               <Link

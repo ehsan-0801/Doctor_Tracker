@@ -1,8 +1,10 @@
 import { createHash, randomBytes } from "node:crypto";
 import bcrypt from "bcryptjs";
+import type { Types } from "mongoose";
 import { SESSION_TTL_MS } from "../constants/auth.js";
-import { Admin } from "../models/Admin.js";
+import type { Role } from "../constants/roles.js";
 import { Session } from "../models/Session.js";
+import { User } from "../models/User.js";
 import { ApiError } from "../utils/ApiError.js";
 
 const BCRYPT_ROUNDS = 12;
@@ -10,9 +12,12 @@ const BCRYPT_ROUNDS = 12;
 // whether an account exists.
 const DUMMY_HASH = bcrypt.hashSync("dummy-password-for-timing", BCRYPT_ROUNDS);
 
-export interface AuthenticatedAdmin {
+export interface AuthenticatedUser {
   id: string;
+  name: string;
   email: string;
+  role: Role;
+  doctorId: string | null;
 }
 
 const hashToken = (token: string) => createHash("sha256").update(token).digest("hex");
@@ -21,31 +26,56 @@ export function hashPassword(password: string): Promise<string> {
   return bcrypt.hash(password, BCRYPT_ROUNDS);
 }
 
-export async function login(email: string, password: string) {
-  const admin = await Admin.findOne({ email }).select("+passwordHash").lean();
-  const passwordMatches = await bcrypt.compare(password, admin?.passwordHash ?? DUMMY_HASH);
+function toAuthenticatedUser(user: {
+  _id: Types.ObjectId;
+  name: string;
+  email: string;
+  role: Role;
+  doctorId?: Types.ObjectId | null;
+}): AuthenticatedUser {
+  return {
+    id: user._id.toString(),
+    name: user.name,
+    email: user.email,
+    role: user.role,
+    doctorId: user.doctorId ? user.doctorId.toString() : null,
+  };
+}
 
-  if (!admin || !passwordMatches) {
+export async function login(email: string, password: string) {
+  const user = await User.findOne({ email }).select("+passwordHash").lean();
+  const passwordMatches = await bcrypt.compare(password, user?.passwordHash ?? DUMMY_HASH);
+
+  // Deactivated accounts get the same generic error as wrong credentials.
+  if (!user || !passwordMatches || !user.active) {
     throw ApiError.unauthorized("Invalid email or password");
   }
 
   const token = randomBytes(32).toString("base64url");
   const expiresAt = new Date(Date.now() + SESSION_TTL_MS);
-  await Session.create({ tokenHash: hashToken(token), adminId: admin._id, expiresAt });
+  await Promise.all([
+    Session.create({ tokenHash: hashToken(token), userId: user._id, expiresAt }),
+    User.updateOne({ _id: user._id }, { lastLoginAt: new Date() }),
+  ]);
 
-  return { token, expiresAt, admin: { id: admin._id.toString(), email: admin.email } };
+  return { token, expiresAt, user: toAuthenticatedUser(user) };
 }
 
-export async function getSessionAdmin(token: string): Promise<AuthenticatedAdmin | null> {
+export async function getSessionUser(token: string): Promise<AuthenticatedUser | null> {
   const session = await Session.findOne({ tokenHash: hashToken(token), expiresAt: { $gt: new Date() } })
-    .select("adminId")
+    .select("userId")
     .lean();
   if (!session) return null;
 
-  const admin = await Admin.findById(session.adminId).select("email").lean();
-  return admin ? { id: admin._id.toString(), email: admin.email } : null;
+  const user = await User.findOne({ _id: session.userId, active: true }).select("name email role doctorId").lean();
+  return user ? toAuthenticatedUser(user) : null;
 }
 
 export async function logout(token: string): Promise<void> {
   await Session.deleteOne({ tokenHash: hashToken(token) });
+}
+
+/** Sign a user out everywhere (deactivation, password reset, role change). */
+export async function revokeUserSessions(userId: string): Promise<void> {
+  await Session.deleteMany({ userId });
 }

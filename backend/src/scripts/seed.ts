@@ -7,13 +7,17 @@
  *
  * The admin is created from ADMIN_EMAIL / ADMIN_PASSWORD. Without --reset an
  * existing admin's password is never overwritten.
+ *
+ * Demo data also creates one account per role, all using ADMIN_PASSWORD:
+ *   management@doctortracker.com, staff@doctortracker.com, and a doctor login
+ *   for every seeded doctor (the doctor's own email).
  */
 import { z } from "zod";
 import { connectDatabase, disconnectDatabase } from "../config/database.js";
 import { PRESET_CONDITIONS } from "../constants/conditions.js";
-import { Admin } from "../models/Admin.js";
 import { Doctor } from "../models/Doctor.js";
 import { Patient } from "../models/Patient.js";
+import { User } from "../models/User.js";
 import { hashPassword } from "../services/auth.service.js";
 
 const seedEnv = z
@@ -70,9 +74,12 @@ const DAY_MS = 24 * 60 * 60 * 1000;
 const daysAgo = (days: number) => new Date(Date.now() - days * DAY_MS - Math.floor(random() * DAY_MS));
 
 async function seedAdmin() {
-  const existing = await Admin.exists({ email: seedEnv.ADMIN_EMAIL });
+  const existing = await User.exists({ email: seedEnv.ADMIN_EMAIL });
   if (existing && args.has("--reset")) {
-    await Admin.updateOne({ _id: existing._id }, { passwordHash: await hashPassword(seedEnv.ADMIN_PASSWORD) });
+    await User.updateOne(
+      { _id: existing._id },
+      { passwordHash: await hashPassword(seedEnv.ADMIN_PASSWORD), role: "admin", active: true },
+    );
     console.log(`Admin ${seedEnv.ADMIN_EMAIL} password reset`);
     return;
   }
@@ -80,13 +87,34 @@ async function seedAdmin() {
     console.log(`Admin ${seedEnv.ADMIN_EMAIL} already exists (password unchanged)`);
     return;
   }
-  await Admin.create({ email: seedEnv.ADMIN_EMAIL, passwordHash: await hashPassword(seedEnv.ADMIN_PASSWORD) });
+  await User.create({
+    name: "Administrator",
+    email: seedEnv.ADMIN_EMAIL,
+    role: "admin",
+    passwordHash: await hashPassword(seedEnv.ADMIN_PASSWORD),
+  });
   console.log(`Admin ${seedEnv.ADMIN_EMAIL} created`);
+}
+
+/** One demo login per role; doctor logins are linked to their doctor records. */
+async function seedDemoUsers(doctors: { _id: unknown; name: string; email: string }[]) {
+  const passwordHash = await hashPassword(seedEnv.ADMIN_PASSWORD);
+  const staffAccounts = [
+    { name: "Morgan Lee", email: "management@doctortracker.com", role: "management" },
+    { name: "Sam Rivera", email: "staff@doctortracker.com", role: "staff" },
+  ];
+  for (const account of staffAccounts) {
+    await User.updateOne({ email: account.email }, { $set: { ...account, passwordHash, active: true } }, { upsert: true });
+  }
+  await User.insertMany(
+    doctors.map((d) => ({ name: d.name, email: d.email, role: "doctor", doctorId: d._id, passwordHash })),
+  );
+  console.log(`Created demo accounts: management, staff and ${doctors.length} doctors (password = ADMIN_PASSWORD)`);
 }
 
 async function seedDemoData() {
   if (args.has("--reset")) {
-    await Promise.all([Patient.deleteMany({}), Doctor.deleteMany({})]);
+    await Promise.all([Patient.deleteMany({}), Doctor.deleteMany({}), User.deleteMany({ role: "doctor" })]);
     console.log("Existing doctors and patients removed");
   } else if (await Doctor.exists({})) {
     console.log("Doctors already exist, skipping demo data (use --reset to recreate)");
@@ -126,11 +154,12 @@ async function seedDemoData() {
   }
   await Patient.insertMany(patients, { timestamps: false });
   console.log(`Created ${doctors.length} doctors and ${patients.length} patients`);
+  await seedDemoUsers(doctors);
 }
 
 async function main() {
   await connectDatabase(seedEnv.MONGODB_URI);
-  await Promise.all([Admin.syncIndexes(), Doctor.syncIndexes(), Patient.syncIndexes()]);
+  await Promise.all([User.syncIndexes(), Doctor.syncIndexes(), Patient.syncIndexes()]);
   await seedAdmin();
   if (!args.has("--admin-only")) await seedDemoData();
 }

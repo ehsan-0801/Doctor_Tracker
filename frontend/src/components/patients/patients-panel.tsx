@@ -23,6 +23,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Label } from "@/components/ui/label";
+import { useSession } from "@/hooks/use-session";
 import { filterState, readSort, useUrlFilters } from "@/hooks/use-url-filters";
 import { doctorsApi, patientsApi } from "@/lib/api/endpoints";
 import { queryKeys } from "@/lib/api/query-keys";
@@ -53,6 +54,11 @@ export function PatientsPanel({ doctor }: { doctor?: DoctorSummary }) {
   const { values, page, setFilters } = useUrlFilters(URL_KEYS);
   const [pending, setPending] = useState<Pending>(null);
   const { remove, unassign } = usePatientMutations();
+  const session = useSession();
+  const canEdit = session.can("patients:write");
+  const canAssign = session.can("patients:assign");
+  const canDelete = session.can("patients:delete");
+  const hasActions = canEdit || (!!doctor && canAssign) || canDelete;
 
   const sort = readSort(values.sortBy, values.sortOrder);
   const params: PatientListParams = {
@@ -83,7 +89,8 @@ export function PatientsPanel({ doctor }: { doctor?: DoctorSummary }) {
     values.doctorId === "unassigned" ? UNASSIGNED : values.doctorId ? { _id: values.doctorId, name: values.doctorName ?? "Selected doctor" } : null;
   const { hasFilters, panelCount, clear: clearFilters } = filterState(values, FILTER_KEYS, setFilters, ["doctorName"]);
 
-  const actions = (patient: Patient) => (
+  const actions = (patient: Patient) =>
+    hasActions && (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <Button variant="ghost" size="icon-lg" aria-label={`Actions for ${patient.name}`}>
@@ -91,21 +98,27 @@ export function PatientsPanel({ doctor }: { doctor?: DoctorSummary }) {
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-52">
-        <DropdownMenuItem onSelect={() => setPending({ kind: "edit", patient })}>
-          <Pencil aria-hidden /> Edit patient
-        </DropdownMenuItem>
-        {doctor && (
+        {canEdit && (
+          <DropdownMenuItem onSelect={() => setPending({ kind: "edit", patient })}>
+            <Pencil aria-hidden /> Edit patient
+          </DropdownMenuItem>
+        )}
+        {doctor && canAssign && (
           <DropdownMenuItem onSelect={() => setPending({ kind: "unassign", patient })}>
             <UserMinus aria-hidden /> Remove from doctor
           </DropdownMenuItem>
         )}
-        <DropdownMenuSeparator />
-        <DropdownMenuItem variant="destructive" onSelect={() => setPending({ kind: "delete", patient })}>
-          <Trash2 aria-hidden /> Delete patient
-        </DropdownMenuItem>
+        {canDelete && (
+          <>
+            {(canEdit || (doctor && canAssign)) && <DropdownMenuSeparator />}
+            <DropdownMenuItem variant="destructive" onSelect={() => setPending({ kind: "delete", patient })}>
+              <Trash2 aria-hidden /> Delete patient
+            </DropdownMenuItem>
+          </>
+        )}
       </DropdownMenuContent>
     </DropdownMenu>
-  );
+    );
 
   const doctorCell = (p: Patient) =>
     p.doctor ? (
@@ -123,7 +136,9 @@ export function PatientsPanel({ doctor }: { doctor?: DoctorSummary }) {
     { id: "condition", header: "Condition", cell: (p) => <Badge variant="secondary" className="font-normal">{p.condition}</Badge> },
     ...(doctor ? [] : [{ id: "doctor", header: "Doctor", cell: doctorCell }]),
     { id: "registered", header: "Registered", sortKey: "createdAt", cell: (p) => <span className="text-muted-foreground">{formatDate(p.createdAt)}</span> },
-    { id: "actions", header: <span className="sr-only">Actions</span>, cell: actions, className: "w-14 text-right", headerClassName: "w-14" },
+    ...(hasActions
+      ? [{ id: "actions", header: <span className="sr-only">Actions</span>, cell: actions, className: "w-14 text-right", headerClassName: "w-14" }]
+      : []),
   ];
 
   return (

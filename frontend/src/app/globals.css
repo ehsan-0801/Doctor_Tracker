@@ -51,43 +51,43 @@
 }
 
 :root {
-  /* Doctor Tracker design tokens (UI/UX specification, "Modern Clinical SaaS") */
-  --background: #f8fafc;
-  --foreground: #0f172a;
+  /* Doctor Tracker design tokens — clinical blue theme (all text pairs meet WCAG AA) */
+  --background: #f3f7fb;
+  --foreground: #0f2236;
   --card: #ffffff;
-  --card-foreground: #0f172a;
+  --card-foreground: #0f2236;
   --popover: #ffffff;
-  --popover-foreground: #0f172a;
-  --primary: #0f766e;
-  --primary-hover: #115e59;
+  --popover-foreground: #0f2236;
+  --primary: #0b6bcb;
+  --primary-hover: #0957a6;
   --primary-foreground: #ffffff;
-  --secondary: #f1f5f9;
-  --secondary-foreground: #0f172a;
-  --muted: #f1f5f9;
-  --muted-foreground: #64748b;
-  --accent: #ccfbf1;
-  --accent-foreground: #115e59;
-  --destructive: #dc2626;
-  --success: #16a34a;
-  --warning: #d97706;
-  --info: #2563eb;
-  --border: #e2e8f0;
-  --input: #e2e8f0;
-  --ring: #0f766e;
-  --chart-1: #0f766e;
-  --chart-2: #14b8a6;
-  --chart-3: #5eead4;
-  --chart-4: #2563eb;
+  --secondary: #eef3f8;
+  --secondary-foreground: #0f2236;
+  --muted: #eef3f8;
+  --muted-foreground: #5b6b7f;
+  --accent: #e3f0fc;
+  --accent-foreground: #0957a6;
+  --destructive: #c62828;
+  --success: #15803d;
+  --warning: #b45309;
+  --info: #0b6bcb;
+  --border: #dce6f0;
+  --input: #d3dfeb;
+  --ring: #0b6bcb;
+  --chart-1: #0b6bcb;
+  --chart-2: #38bdf8;
+  --chart-3: #0d9488;
+  --chart-4: #7c3aed;
   --chart-5: #94a3b8;
   --radius: 0.625rem;
-  --sidebar: #0f172a;
-  --sidebar-foreground: #cbd5e1;
-  --sidebar-primary: #0f766e;
+  --sidebar: #0b2a4a;
+  --sidebar-foreground: #c7d5e5;
+  --sidebar-primary: #0b6bcb;
   --sidebar-primary-foreground: #ffffff;
-  --sidebar-accent: #1e293b;
+  --sidebar-accent: #123b63;
   --sidebar-accent-foreground: #ffffff;
-  --sidebar-border: #1e293b;
-  --sidebar-ring: #14b8a6;
+  --sidebar-border: #163f66;
+  --sidebar-ring: #38bdf8;
 }
 
 @layer base {

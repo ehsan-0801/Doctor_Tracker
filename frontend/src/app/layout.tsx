@@ -10,7 +10,7 @@ export const metadata: Metadata = {
   description: "Administration portal for managing doctors and their patients.",
 };
 
-export const viewport: Viewport = { themeColor: "#0f766e" };
+export const viewport: Viewport = { themeColor: "#0b6bcb" };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (

@@ -24,6 +24,14 @@ export const patientSchema = z.object({
   doctorId: z.string().min(1, "Select a doctor"),
 });
 
+/** Same rule as the API (backend/src/validators/user.validator.ts). */
+export const passwordSchema = z
+  .string()
+  .min(8, "Password must be at least 8 characters")
+  .max(200)
+  .regex(/[A-Za-z]/, "Password must contain a letter")
+  .regex(/\d/, "Password must contain a number");
+
 export type LoginFormValues = z.infer<typeof loginSchema>;
 export type DoctorFormValues = z.infer<typeof doctorSchema>;
 export type PatientFormValues = z.infer<typeof patientSchema>;

@@ -21,6 +21,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { useSession } from "@/hooks/use-session";
 import { filterState, readSort, useUrlFilters } from "@/hooks/use-url-filters";
 import { doctorsApi } from "@/lib/api/endpoints";
 import { queryKeys } from "@/lib/api/query-keys";
@@ -37,6 +38,7 @@ export function DoctorsView() {
   const router = useRouter();
   const { values, page, setFilters } = useUrlFilters(URL_KEYS);
   const [createOpen, setCreateOpen] = useState(false);
+  const canCreate = useSession().can("doctors:create");
 
   const { sortBy: _sb, sortOrder: _so, ...filterValues } = values;
   const sort = readSort(_sb, _so);
@@ -118,9 +120,11 @@ export function DoctorsView() {
         title="Doctors"
         description="Manage doctor information and their associated patients."
         actions={
-          <Button size="lg" className="h-10 px-4" onClick={() => setCreateOpen(true)}>
-            <Plus aria-hidden /> Add doctor
-          </Button>
+          canCreate && (
+            <Button size="lg" className="h-10 px-4" onClick={() => setCreateOpen(true)}>
+              <Plus aria-hidden /> Add doctor
+            </Button>
+          )
         }
       />
 
@@ -204,11 +208,11 @@ export function DoctorsView() {
                   <Button variant="outline" size="lg" onClick={clearFilters}>
                     Clear filters
                   </Button>
-                ) : (
+                ) : canCreate ? (
                   <Button size="lg" onClick={() => setCreateOpen(true)}>
                     <Plus aria-hidden /> Add doctor
                   </Button>
-                )
+                ) : undefined
               }
             />
           }
@@ -216,7 +220,7 @@ export function DoctorsView() {
         <Pagination pagination={doctors.data?.pagination} onPageChange={(next) => setFilters({ page: next })} noun="doctors" />
       </section>
 
-      <DoctorFormDialog open={createOpen} onOpenChange={setCreateOpen} />
+      {canCreate && <DoctorFormDialog open={createOpen} onOpenChange={setCreateOpen} />}
     </div>
   );
 }

@@ -3,6 +3,7 @@ import mongoose from "mongoose";
 import request from "supertest";
 import type { Express } from "express";
 import { afterAll, beforeAll, beforeEach } from "vitest";
+import type { Role } from "../src/constants/roles.js";
 
 export const ADMIN = { email: "admin@test.local", password: "Admin1234" };
 
@@ -29,9 +30,9 @@ export function setupTestApp() {
   beforeEach(async () => {
     const { all } = await import("./models.js");
     await Promise.all(all.map((model) => model.deleteMany({})));
-    const { Admin } = await import("../src/models/Admin.js");
+    const { User } = await import("../src/models/User.js");
     const { hashPassword } = await import("../src/services/auth.service.js");
-    await Admin.create({ email: ADMIN.email, passwordHash: await hashPassword(ADMIN.password) });
+    await User.create({ name: "Admin", email: ADMIN.email, role: "admin", passwordHash: await hashPassword(ADMIN.password) });
   });
 
   afterAll(async () => {
@@ -43,10 +44,23 @@ export function setupTestApp() {
     get app() {
       return ctx.app;
     },
-    /** Supertest agent that keeps the session cookie between requests. */
-    async loggedInAgent() {
+    /** Supertest agent that keeps the session cookie between requests (admin by default). */
+    async loggedInAgent(role: Role = "admin", options: { doctorId?: unknown } = {}) {
       const agent = request.agent(ctx.app);
-      const res = await agent.post("/api/auth/login").send(ADMIN);
+      let credentials = ADMIN;
+      if (role !== "admin") {
+        const { User } = await import("../src/models/User.js");
+        const { hashPassword } = await import("../src/services/auth.service.js");
+        credentials = { email: `${role}.${Date.now()}.${Math.random().toString(36).slice(2)}@test.local`, password: ADMIN.password };
+        await User.create({
+          name: `${role} user`,
+          email: credentials.email,
+          role,
+          doctorId: options.doctorId ?? null,
+          passwordHash: await hashPassword(credentials.password),
+        });
+      }
+      const res = await agent.post("/api/auth/login").send(credentials);
       if (res.status !== 200) throw new Error(`login failed: ${res.status}`);
       return agent;
     },

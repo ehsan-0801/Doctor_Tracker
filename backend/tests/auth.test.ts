@@ -31,7 +31,7 @@ describe("authentication", () => {
   it("signs in with an httpOnly cookie and never returns the password hash", async () => {
     const res = await request(t.app).post("/api/auth/login").send({ email: ADMIN.email.toUpperCase(), password: ADMIN.password });
     expect(res.status).toBe(200);
-    expect(res.body.data.admin.email).toBe(ADMIN.email);
+    expect(res.body.data.user).toMatchObject({ email: ADMIN.email, role: "admin" });
     expect(JSON.stringify(res.body)).not.toContain("passwordHash");
     const cookie = res.headers["set-cookie"]?.[0] ?? "";
     expect(cookie).toMatch(/^dt_session=/);
@@ -47,11 +47,11 @@ describe("authentication", () => {
     expect(session?.tokenHash).not.toBe(token);
   });
 
-  it("returns the current admin for a valid session", async () => {
+  it("returns the current user and role for a valid session", async () => {
     const agent = await t.loggedInAgent();
     const res = await agent.get("/api/auth/session");
     expect(res.status).toBe(200);
-    expect(res.body.data.admin.email).toBe(ADMIN.email);
+    expect(res.body.data.user).toMatchObject({ email: ADMIN.email, role: "admin" });
   });
 
   it("revokes the session on logout, even if the cookie is replayed", async () => {
@@ -61,6 +61,14 @@ describe("authentication", () => {
     expect(logout.status).toBe(200);
     const replay = await request(t.app).get("/api/auth/session").set("Cookie", cookie);
     expect(replay.status).toBe(401);
+  });
+
+  it("rejects deactivated users at login and on existing sessions", async () => {
+    const agent = await t.loggedInAgent();
+    const { User } = await import("./models.js");
+    await User.updateOne({ email: ADMIN.email }, { active: false });
+    expect((await agent.get("/api/auth/session")).status).toBe(401);
+    expect((await request(t.app).post("/api/auth/login").send(ADMIN)).status).toBe(401);
   });
 
   it("rejects expired sessions", async () => {

@@ -8,13 +8,16 @@ import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { cn } from "@/lib/utils";
 import { Brand } from "./brand";
-import { isActivePath, NAV_ITEMS } from "./nav-items";
+import { useSession } from "@/hooks/use-session";
+import { isActivePath, navItemsFor } from "./nav-items";
 import { useLogout } from "./use-logout";
 
 export function MobileNav() {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
   const { logout, pending } = useLogout();
+  const session = useSession();
+  const items = navItemsFor(session.user?.role, session.can);
 
   return (
     <Sheet open={open} onOpenChange={setOpen}>
@@ -31,7 +34,7 @@ export function MobileNav() {
         </SheetHeader>
         <nav aria-label="Main navigation" className="flex-1 px-3 py-2">
           <ul className="space-y-1">
-            {NAV_ITEMS.map((item) => {
+            {items.map((item) => {
               const active = isActivePath(pathname, item.href);
               return (
                 <li key={item.href}>
