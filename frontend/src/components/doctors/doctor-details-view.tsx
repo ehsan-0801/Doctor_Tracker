@@ -31,7 +31,7 @@ function Detail({ icon: Icon, label, children }: { icon: typeof Mail; label: str
   );
 }
 
-export function DoctorDetailsView({ id }: { id: string }) {
+export function DoctorDetailsView({ id, self = false }: { id: string; /** Doctor viewing their own portal page. */ self?: boolean }) {
   const [addOpen, setAddOpen] = useState(false);
   const session = useSession();
   const canAdd = session.can("patients:write");
@@ -40,7 +40,14 @@ export function DoctorDetailsView({ id }: { id: string }) {
   const doctor = useQuery({ queryKey: queryKeys.doctors.detail(id), queryFn: () => doctorsApi.get(id) });
   const d = doctor.data;
 
-  const back = <Breadcrumbs items={[{ label: "Doctors", href: "/doctors" }, { label: d?.name ?? "Doctor details" }]} />;
+  const back = self ? (
+    <div className="space-y-1">
+      <h1 className="text-2xl font-semibold sm:text-[26px]">{d ? `Hello, ${d.name}` : "My patients"}</h1>
+      <p className="text-sm text-muted-foreground">Your profile and the patients assigned to you.</p>
+    </div>
+  ) : (
+    <Breadcrumbs items={[{ label: "Doctors", href: "/doctors" }, { label: d?.name ?? "Doctor details" }]} />
+  );
 
   if (doctor.error) {
     const notFound = doctor.error instanceof ApiError && (doctor.error.status === 404 || doctor.error.status === 400);
@@ -77,7 +84,11 @@ export function DoctorDetailsView({ id }: { id: string }) {
               <div className="flex min-w-0 items-center gap-4">
                 <DoctorAvatar name={d.name} photoUrl={d.photoUrl} className="size-14 text-base" />
                 <div className="min-w-0">
-                  <h1 className="truncate text-2xl font-semibold">{d.name}</h1>
+                  {self ? (
+                    <h2 className="truncate text-xl font-semibold">{d.name}</h2>
+                  ) : (
+                    <h1 className="truncate text-2xl font-semibold">{d.name}</h1>
+                  )}
                   <p className="text-sm text-muted-foreground">
                     {d.specialization}
                     {d.qualifications ? ` · ${d.qualifications}` : ""}

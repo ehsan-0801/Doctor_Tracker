@@ -16,6 +16,7 @@ import { useSession } from "@/hooks/use-session";
 import { ROLE_LABELS } from "@/lib/permissions";
 import { Brand } from "./brand";
 import { MobileNav } from "./mobile-nav";
+import { ThemeToggle } from "./theme-toggle";
 import { isActivePath, NAV_ITEMS } from "./nav-items";
 import { useLogout } from "./use-logout";
 
@@ -32,7 +33,8 @@ export function AppHeader() {
       <Brand compact className="md:hidden" />
       <p className="hidden text-sm font-medium text-muted-foreground md:block">{section?.title ?? "DocTrack"}</p>
 
-      <div className="ml-auto">
+      <div className="ml-auto flex items-center gap-1">
+        <ThemeToggle />
         <DropdownMenu>
           <DropdownMenuTrigger
             className="flex h-10 items-center gap-2 rounded-lg px-2 text-sm hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"

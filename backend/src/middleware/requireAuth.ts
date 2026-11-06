@@ -26,6 +26,20 @@ export function requirePermission(permission: Permission) {
   };
 }
 
+/**
+ * Like `requirePermission`, but a doctor may also access routes about their own
+ * doctor record (`:id` equal to the doctor id stored on their session).
+ */
+export function requirePermissionOrOwnDoctor(permission: Permission) {
+  return (req: Request, res: Response, next: NextFunction) => {
+    const user = res.locals.user;
+    if (!user) throw ApiError.unauthorized();
+    if (can(user.role, permission)) return next();
+    if (user.role === "doctor" && user.doctorId && req.params.id === user.doctorId) return next();
+    throw ApiError.forbidden();
+  };
+}
+
 /** The authenticated user; only call in handlers behind `requireAuth`. */
 export function currentUser(res: Response): AuthenticatedUser {
   const user = res.locals.user;

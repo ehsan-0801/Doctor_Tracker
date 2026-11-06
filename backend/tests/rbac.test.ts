@@ -106,3 +106,20 @@ describe("user management", () => {
     expect((await staff.get("/api/patients")).status).toBe(401);
   });
 });
+
+describe("doctor self-access", () => {
+  it("lets a doctor read only their own record and patients", async () => {
+    const [mine, other] = [await createDoctor(), await createDoctor()];
+    await createPatient({ doctorId: mine._id });
+    await createPatient({ doctorId: other._id });
+    const doctor = await t.loggedInAgent("doctor", { doctorId: mine._id });
+    expect((await doctor.get(`/api/doctors/${mine._id}`)).status).toBe(200);
+    const own = await doctor.get(`/api/doctors/${mine._id}/patients`);
+    expect(own.status).toBe(200);
+    expect(own.body.pagination.total).toBe(1);
+    expect((await doctor.get(`/api/doctors/${other._id}`)).status).toBe(403);
+    expect((await doctor.get(`/api/doctors/${other._id}/patients`)).status).toBe(403);
+    expect((await doctor.get("/api/patients")).status).toBe(403);
+    expect((await doctor.get("/api/patients/conditions")).status).toBe(200);
+  });
+});

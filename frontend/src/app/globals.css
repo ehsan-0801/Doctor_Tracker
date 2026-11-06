@@ -2,6 +2,9 @@
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
 
+/* Dark utilities apply only inside the signed-in portals when dark mode is on. */
+@custom-variant dark (&:where([data-theme="dark"] [data-area="admin"], [data-theme="dark"] [data-area="admin"] *));
+
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
@@ -119,6 +122,35 @@
   --ice: #ddf3f5;
   --peach: #fff1e9;
   --cloud: #f8faf9;
+}
+
+/*
+ * Portal dark mode: white surfaces become matte black; coral, teal accents, the
+ * slate sidebar and status colours keep their roles. Text turns light and teal
+ * text/marks use a lighter tint so everything stays WCAG AA on black.
+ */
+html[data-theme="dark"] body:has([data-area="admin"]) {
+  color-scheme: dark;
+  --background: #0f1112;
+  --foreground: #e7ecec;
+  --card: #17191b;
+  --card-foreground: #e7ecec;
+  --popover: #17191b;
+  --popover-foreground: #e7ecec;
+  --muted: #1f2225;
+  --muted-foreground: #a1aeb3;
+  --border: #2a2e31;
+  --input: #33383c;
+  --link: #7cc1d1;
+  --ring: #7cc1d1;
+  --info: #7cc1d1;
+  --chart-1: #7cc1d1;
+  --chart-3: #c7d2d6;
+  --destructive: #f87171;
+  --success: #4ade80;
+  --warning: #fbbf24;
+  --sidebar: #253c48;
+  --logo-bg: #253c48;
 }
 
 @layer base {
