@@ -88,13 +88,15 @@ export function SiteHeader({ emergencyPhone }: { emergencyPhone: string }) {
 
         <nav aria-label="Main" className="hidden flex-1 justify-center lg:flex">
           <div ref={navRef} className="relative flex items-center gap-1">
-            {/* Coral underline that slides to the active link. */}
+            {/* Soft peach highlight with a coral underline, sliding inside the active link. */}
             <span
               ref={indicatorRef}
               aria-hidden
-              className="absolute -bottom-[23px] left-0 h-[3px] rounded-full bg-coral-deep transition-[transform,width,opacity] duration-300 ease-out motion-reduce:transition-none"
+              className="absolute inset-y-0 left-0 rounded-md bg-peach transition-[transform,width,opacity] duration-300 ease-out motion-reduce:transition-none"
               style={{ opacity: 0 }}
-            />
+            >
+              <span className="absolute inset-x-3.5 bottom-1 h-[2px] rounded-full bg-coral-deep" />
+            </span>
             {LINKS.map((link) => {
               const active = activeKey === link.key;
               return (
@@ -104,8 +106,8 @@ export function SiteHeader({ emergencyPhone }: { emergencyPhone: string }) {
                   aria-current={active && !link.section ? "page" : undefined}
                   data-active={active}
                   className={cn(
-                    "relative rounded-md px-3.5 py-2 text-[15px] font-medium transition-colors duration-200 focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none",
-                    active ? "text-slate-deep" : "text-muted-foreground hover:bg-cloud hover:text-slate-deep",
+                    "relative z-10 rounded-md px-3.5 py-2 text-[15px] font-medium transition-colors duration-200 focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none",
+                    active ? "text-slate-deep" : "text-muted-foreground hover:text-slate-deep",
                   )}
                 >
                   {t.nav[link.key]}
