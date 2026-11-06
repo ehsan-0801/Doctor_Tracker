@@ -24,7 +24,7 @@ export function AppSidebar() {
     <aside className="fixed inset-y-0 left-0 z-30 hidden w-[72px] flex-col border-r border-sidebar-border bg-sidebar text-sidebar-foreground md:flex lg:w-[250px]">
       <div className="flex h-16 items-center px-4 text-white lg:px-5">
         <Brand className="lg:hidden" compact />
-        <Brand className="hidden lg:flex" />
+        <Brand className="hidden lg:flex" inverted />
       </div>
 
       <nav aria-label="Main navigation" className="flex-1 px-3 py-4">

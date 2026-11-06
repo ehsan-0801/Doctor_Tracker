@@ -68,3 +68,15 @@ export const usersApi = {
     api.patch<UserAccount>(`/users/${id}`, input),
   resetPassword: (id: string, password: string) => api.post<null>(`/users/${id}/reset-password`, { password }),
 };
+
+export const publicApi = {
+  site: () => api.get<import("@/types/site").PublicSite>("/public/site"),
+  doctors: (params: { page?: number; search?: string; specialization?: string }) =>
+    api.list<import("@/types/site").PublicDoctor>("/public/doctors", { ...params, limit: 12 }),
+};
+
+export const settingsApi = {
+  get: () => api.get<import("@/types/site").SiteSettings>("/settings"),
+  update: (settings: import("@/types/site").SiteSettings) =>
+    api.put<import("@/types/site").SiteSettings>("/settings", settings),
+};

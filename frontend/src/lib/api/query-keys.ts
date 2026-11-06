@@ -17,6 +17,9 @@ export const queryKeys = {
     conditions: ["patients", "conditions"] as const,
   },
   dashboard: { all: ["dashboard"] as const },
+  site: ["site"] as const,
+  publicDoctors: (params: object) => ["public-doctors", params] as const,
+  settings: ["settings"] as const,
   users: {
     all: ["users"] as const,
     list: (params: object) => ["users", "list", params] as const,

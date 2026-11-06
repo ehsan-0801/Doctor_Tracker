@@ -1,6 +1,6 @@
-# Doctor Tracker
+# DocTrack
 
-**A secure administration portal for managing doctors and their patients.** Administrators sign in, register doctors, add patients under a doctor, browse every patient record with search, filters and pagination, and follow patient distribution and registration trends on a live dashboard backed by MongoDB aggregations.
+**DocTrack is a hospital operations platform: a public website where visitors find specialists, and a secure portal where administrators, management, front-desk staff and doctors manage the care network.** Administrators sign in, register doctors, add patients under a doctor, browse every patient record with search, filters and pagination, and follow patient distribution and registration trends on a live dashboard backed by MongoDB aggregations.
 
 ![Dashboard](docs/screenshots/desktop-dashboard.png)
 
@@ -8,6 +8,8 @@
 
 ## Features
 
+- **Public website** – homepage with a video hero, live network statistics (refreshed every 30 s from the database), services, featured doctors, about and contact sections, plus a searchable **Find a doctor** directory and public doctor profiles. All content is editable by administrators in **Site settings**; only public doctor fields (name, specialization, hospital) are exposed.
+- **Roles** – Administrator, Management, Front desk (staff) and Doctor, enforced by capability permissions on every API route; menus and actions adapt to the signed-in role. Administrators manage accounts on the **Users** page.
 - **Authentication** – administrator login with hashed passwords, server-side sessions in an `httpOnly` cookie, logout that revokes the session, rate-limited sign-in, protected pages and APIs.
 - **Dashboard** – total doctors, total patients, average patients per doctor, new patients in the last 30 days (with trend), patients-per-doctor chart, monthly registration chart (6/12/24-month period), patients-by-condition chart, recently added patients. All numbers are computed in MongoDB.
 - **Doctors** – add doctors, list with server-side search (name, email, specialization, hospital), specialization / hospital / created-date filters, sortable columns, pagination, patient count per doctor, doctor details page with breadcrumbs.
@@ -288,6 +290,10 @@ E2E_MONGODB_URI="mongodb+srv://…/doctor_tracker_e2e?retryWrites=true&w=majorit
 | Navigation drawer | Filters | Doctor details |
 |---|---|---|
 | ![Mobile navigation](docs/screenshots/mobile-navigation.png) | ![Mobile filters](docs/screenshots/mobile-patients-filters.png) | ![Mobile doctor details](docs/screenshots/mobile-doctor-details.png) |
+
+## Media credits
+
+The hero and About videos (and their poster frames) are from [Mixkit](https://mixkit.co) under the Mixkit Stock Video Free License (commercial use allowed): "Clinic staff at a hospital reception" (#4766) and "Doctor wearing mask and gloves for protection" (#4745). The DocTrack logo and favicon are original SVGs in this repository.
 
 ## Scope
 

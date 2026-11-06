@@ -6,8 +6,8 @@ import "./globals.css";
 const inter = Inter({ variable: "--font-sans", subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: { default: "Doctor Tracker", template: "%s · Doctor Tracker" },
-  description: "Administration portal for managing doctors and their patients.",
+  title: { default: "DocTrack", template: "%s · DocTrack" },
+  description: "DocTrack connects patients with the right specialists and keeps hospital care teams in sync.",
 };
 
 export const viewport: Viewport = { themeColor: "#0b6bcb" };

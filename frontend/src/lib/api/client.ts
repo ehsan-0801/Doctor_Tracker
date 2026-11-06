@@ -76,6 +76,7 @@ export const api = {
   post: async <T>(path: string, body?: unknown, opts?: { skipAuthRedirect?: boolean }) =>
     (await request<T>("POST", path, { body: body ?? {}, ...opts })).data,
   patch: async <T>(path: string, body: unknown) => (await request<T>("PATCH", path, { body })).data,
+  put: async <T>(path: string, body: unknown) => (await request<T>("PUT", path, { body })).data,
   delete: async <T>(path: string) => (await request<T>("DELETE", path)).data,
   /** Session probe that must not trigger the 401 redirect. */
   getQuiet: async <T>(path: string) => (await request<T>("GET", path, { skipAuthRedirect: true })).data,

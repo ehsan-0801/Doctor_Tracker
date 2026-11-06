@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { Suspense } from "react";
 import { Brand } from "@/components/layout/brand";
 import { LoginForm } from "./login-form";
@@ -10,9 +11,9 @@ export default function LoginPage() {
     <main className="flex min-h-screen items-center justify-center px-4 py-10">
       <div className="w-full max-w-[400px]">
         <div className="mb-8 flex flex-col items-center gap-4 text-center">
-          <Brand compact />
+          <Link href="/" aria-label="DocTrack home"><Brand compact /></Link>
           <div className="space-y-1">
-            <h1 className="text-2xl font-semibold">Doctor Tracker</h1>
+            <h1 className="text-2xl font-semibold">DocTrack</h1>
             <p className="text-sm text-muted-foreground">Sign in to the hospital portal</p>
           </div>
         </div>
@@ -22,6 +23,11 @@ export default function LoginPage() {
           </Suspense>
         </div>
         <p className="mt-6 text-center text-xs text-muted-foreground">For hospital administrators, management, front-desk staff and doctors.</p>
+        <p className="mt-3 text-center text-sm">
+          <Link href="/" className="font-medium text-primary hover:underline">
+            ← Back to website
+          </Link>
+        </p>
       </div>
     </main>
   );

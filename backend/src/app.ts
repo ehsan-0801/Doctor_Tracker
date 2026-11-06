@@ -18,6 +18,7 @@ export function createApp() {
   app.use(express.json({ limit: "100kb" }));
   app.use(cookieParser());
 
+  // Private API responses are never cached; public routes override this.
   app.use("/api", (_req, res, next) => {
     res.set("Cache-Control", "no-store");
     next();

@@ -51,7 +51,7 @@
 }
 
 :root {
-  /* Doctor Tracker design tokens — clinical blue theme (all text pairs meet WCAG AA) */
+  /* DocTrack design tokens — clinical blue theme (all text pairs meet WCAG AA) */
   --background: #f3f7fb;
   --foreground: #0f2236;
   --card: #ffffff;

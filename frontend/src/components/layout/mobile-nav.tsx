@@ -30,7 +30,7 @@ export function MobileNav() {
         <SheetHeader className="h-16 justify-center px-5 text-white">
           <SheetTitle className="sr-only">Navigation</SheetTitle>
           <SheetDescription className="sr-only">Main application navigation</SheetDescription>
-          <Brand />
+          <Brand inverted />
         </SheetHeader>
         <nav aria-label="Main navigation" className="flex-1 px-3 py-2">
           <ul className="space-y-1">

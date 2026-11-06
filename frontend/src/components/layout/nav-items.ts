@@ -1,4 +1,4 @@
-import { ClipboardList, LayoutDashboard, Stethoscope, UserCog, Users, type LucideIcon } from "lucide-react";
+import { ClipboardList, Globe, LayoutDashboard, Stethoscope, UserCog, Users, type LucideIcon } from "lucide-react";
 import type { Permission } from "@/lib/permissions";
 import type { Role } from "@/types/api";
 
@@ -18,6 +18,7 @@ export const NAV_ITEMS: NavItem[] = [
   { title: "Doctors", href: "/doctors", icon: Stethoscope, permission: "doctors:read" },
   { title: "Patients", href: "/patients", icon: Users, permission: "patients:read" },
   { title: "Users", href: "/users", icon: UserCog, permission: "users:manage" },
+  { title: "Site settings", href: "/settings", icon: Globe, permission: "settings:manage" },
 ];
 
 export function navItemsFor(role: Role | undefined, canDo: (p: Permission) => boolean): NavItem[] {

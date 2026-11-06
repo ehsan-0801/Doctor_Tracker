@@ -29,7 +29,7 @@ export function AppHeader() {
     <header className="sticky top-0 z-20 flex h-16 items-center gap-3 border-b bg-card/95 px-4 backdrop-blur supports-[backdrop-filter]:bg-card/80 sm:px-6 lg:px-8">
       <MobileNav />
       <Brand compact className="md:hidden" />
-      <p className="hidden text-sm font-medium text-muted-foreground md:block">{section?.title ?? "Doctor Tracker"}</p>
+      <p className="hidden text-sm font-medium text-muted-foreground md:block">{section?.title ?? "DocTrack"}</p>
 
       <div className="ml-auto">
         <DropdownMenu>
