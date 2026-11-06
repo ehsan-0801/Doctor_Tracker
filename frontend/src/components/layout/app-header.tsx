@@ -17,6 +17,7 @@ import { ROLE_LABELS } from "@/lib/permissions";
 import { Brand } from "./brand";
 import { MobileNav } from "./mobile-nav";
 import { ThemeToggle } from "./theme-toggle";
+import { MyStatusButton } from "@/components/tracking/my-status-button";
 import { isActivePath, NAV_ITEMS } from "./nav-items";
 import { useLogout } from "./use-logout";
 
@@ -34,6 +35,7 @@ export function AppHeader() {
       <p className="hidden text-sm font-medium text-muted-foreground md:block">{section?.title ?? "DocTrack"}</p>
 
       <div className="ml-auto flex items-center gap-1">
+        <MyStatusButton />
         <ThemeToggle />
         <DropdownMenu>
           <DropdownMenuTrigger

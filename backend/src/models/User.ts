@@ -10,6 +10,8 @@ const userSchema = new Schema(
     // Set only for doctor accounts: the doctor record this login belongs to.
     doctorId: { type: Schema.Types.ObjectId, ref: "Doctor", default: null },
     active: { type: Boolean, default: true },
+    // Staff/management only: doctors this user supports (chat + location updates).
+    assignedDoctorIds: { type: [{ type: Schema.Types.ObjectId, ref: "Doctor" }], default: [] },
     // Optional profile photo (https URL, e.g. Cloudinary DocTrack/staff).
     photoUrl: { type: String, trim: true, maxlength: 500, default: "" },
     lastLoginAt: { type: Date, default: null },
@@ -18,6 +20,7 @@ const userSchema = new Schema(
 );
 
 userSchema.index({ role: 1, createdAt: -1 });
+userSchema.index({ assignedDoctorIds: 1 });
 // One login per doctor record.
 userSchema.index({ doctorId: 1 }, { unique: true, partialFilterExpression: { doctorId: { $type: "objectId" } } });
 

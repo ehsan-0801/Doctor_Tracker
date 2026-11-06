@@ -7,6 +7,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 import { cn } from "@/lib/utils";
 import { Brand } from "./brand";
 import { useSession } from "@/hooks/use-session";
+import { useUnreadCount } from "@/hooks/use-unread-count";
 import { isActivePath, navItemsFor } from "./nav-items";
 import { useLogout } from "./use-logout";
 
@@ -19,6 +20,7 @@ export function AppSidebar() {
   const { logout, pending } = useLogout();
   const session = useSession();
   const items = navItemsFor(session.user?.role, session.can);
+  const unread = useUnreadCount();
 
   return (
     <aside className="fixed inset-y-0 left-0 z-30 hidden w-[72px] flex-col border-r border-sidebar-border bg-sidebar text-sidebar-foreground md:flex lg:w-[250px]">
@@ -45,6 +47,12 @@ export function AppSidebar() {
               >
                 <item.icon className="size-[18px] shrink-0" aria-hidden />
                 <span className="sr-only lg:not-sr-only">{item.title}</span>
+                {item.href === "/messages" && unread > 0 && (
+                  <span className="ml-auto hidden h-5 min-w-5 items-center justify-center rounded-full bg-[var(--brand-dot)] px-1.5 text-[11px] font-semibold text-sidebar lg:flex">
+                    {unread > 99 ? "99+" : unread}
+                    <span className="sr-only"> unread messages</span>
+                  </span>
+                )}
               </Link>
             );
             return (

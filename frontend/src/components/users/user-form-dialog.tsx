@@ -2,7 +2,7 @@
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useQueryClient } from "@tanstack/react-query";
-import { Loader2 } from "lucide-react";
+import { Loader2, X } from "lucide-react";
 import { useEffect } from "react";
 import { Controller, useForm, useWatch } from "react-hook-form";
 import { toast } from "sonner";
@@ -30,6 +30,7 @@ const baseSchema = z.object({
   password: z.string(),
   photoUrl: z.string(),
   doctor: z.custom<DoctorChoice | null>(),
+  assigned: z.array(z.object({ _id: z.string(), name: z.string() })).max(50),
 });
 
 const makeSchema = (creating: boolean) =>
@@ -68,6 +69,7 @@ export function UserFormDialog({
       role: user?.role ?? "staff",
       password: "",
       photoUrl: user?.photoUrl ?? "",
+      assigned: user?.assignedDoctors ?? [],
       doctor: user?.doctor ? { _id: user.doctor._id, name: user.doctor.name } : null,
     });
   }, [open, user, reset]);
@@ -85,10 +87,17 @@ export function UserFormDialog({
           password: values.password,
           doctorId,
           photoUrl: values.photoUrl,
+          assignedDoctorIds: values.assigned.map((d) => d._id),
         });
         toast.success(`Account created for ${values.name}`);
       } else {
-        await usersApi.update(user._id, { name: values.name, role: values.role, doctorId: doctorId ?? null, photoUrl: values.photoUrl });
+        await usersApi.update(user._id, {
+          name: values.name,
+          role: values.role,
+          doctorId: doctorId ?? null,
+          photoUrl: values.photoUrl,
+          assignedDoctorIds: values.assigned.map((d) => d._id),
+        });
         toast.success("Account updated");
       }
       await queryClient.invalidateQueries({ queryKey: queryKeys.users.all });
@@ -157,6 +166,41 @@ export function UserFormDialog({
                 name="doctor"
                 render={({ field }) => (
                   <DoctorCombobox id="user-doctor" value={field.value} onChange={field.onChange} invalid={!!errors.doctor} />
+                )}
+              />
+            </FormField>
+          )}
+          {(role === "staff" || role === "management") && (
+            <FormField id="user-assigned" label="Assigned doctors" hint="Assigned staff can chat with these doctors and update their location.">
+              <Controller
+                control={control}
+                name="assigned"
+                render={({ field }) => (
+                  <div className="space-y-2">
+                    {field.value.length > 0 && (
+                      <ul className="flex flex-wrap gap-1.5">
+                        {field.value.map((d) => (
+                          <li key={d._id} className="flex items-center gap-1 rounded-full border bg-muted px-2.5 py-1 text-xs">
+                            {d.name}
+                            <button
+                              type="button"
+                              onClick={() => field.onChange(field.value.filter((x) => x._id !== d._id))}
+                              className="rounded-full p-0.5 hover:bg-background"
+                              aria-label={`Remove ${d.name}`}
+                            >
+                              <X className="size-3" />
+                            </button>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                    <DoctorCombobox
+                      id="user-assigned"
+                      value={null}
+                      placeholder="Add a doctor…"
+                      onChange={(choice) => choice && !field.value.some((x) => x._id === choice._id) && field.onChange([...field.value, choice])}
+                    />
+                  </div>
                 )}
               />
             </FormField>

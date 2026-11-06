@@ -7,7 +7,17 @@ import { buildPagination } from "../utils/response.js";
 import type { CreateUserInput, UpdateUserInput, UserListQuery } from "../validators/user.validator.js";
 import { hashPassword, revokeUserSessions } from "./auth.service.js";
 
-const PUBLIC_FIELDS = "name email role doctorId active photoUrl lastLoginAt createdAt updatedAt";
+const PUBLIC_FIELDS = "name email role doctorId assignedDoctorIds active photoUrl lastLoginAt createdAt updatedAt";
+
+/** Only staff/management can be assigned to doctors; ids must exist. */
+async function resolveAssignments(role: string, ids: string[] | undefined) {
+  if (role !== "staff" && role !== "management") return [];
+  const unique = [...new Set(ids ?? [])];
+  if (unique.length && (await Doctor.countDocuments({ _id: { $in: unique } })) !== unique.length) {
+    throw ApiError.badRequest("One or more assigned doctors do not exist", [{ field: "assignedDoctorIds", message: "Remove doctors that no longer exist" }]);
+  }
+  return unique;
+}
 const DOCTOR_FIELDS = "name specialization";
 
 export async function listUsers(query: UserListQuery) {
@@ -27,18 +37,27 @@ export async function listUsers(query: UserListQuery) {
       .skip((query.page - 1) * query.limit)
       .limit(query.limit)
       .populate({ path: "doctorId", select: DOCTOR_FIELDS })
+      .populate({ path: "assignedDoctorIds", select: "name" })
       .lean(),
     User.countDocuments(filter),
   ]);
-  const data = users.map(({ doctorId: doctor, ...rest }) => ({ ...rest, doctor: doctor ?? null }));
+  const data = users.map(({ doctorId: doctor, assignedDoctorIds: assigned, ...rest }) => ({
+    ...rest,
+    doctor: doctor ?? null,
+    assignedDoctors: assigned ?? [],
+  }));
   return { data, pagination: buildPagination(query.page, query.limit, total) };
 }
 
 async function getUser(id: string) {
-  const user = await User.findById(id).select(PUBLIC_FIELDS).populate({ path: "doctorId", select: DOCTOR_FIELDS }).lean();
+  const user = await User.findById(id)
+    .select(PUBLIC_FIELDS)
+    .populate({ path: "doctorId", select: DOCTOR_FIELDS })
+    .populate({ path: "assignedDoctorIds", select: "name" })
+    .lean();
   if (!user) throw ApiError.notFound("User not found");
-  const { doctorId: doctor, ...rest } = user;
-  return { ...rest, doctor: doctor ?? null };
+  const { doctorId: doctor, assignedDoctorIds: assigned, ...rest } = user;
+  return { ...rest, doctor: doctor ?? null, assignedDoctors: assigned ?? [] };
 }
 
 /** A doctor login must point at an existing doctor that has no other login. */
@@ -63,6 +82,7 @@ export async function createUser(input: CreateUserInput) {
     passwordHash: await hashPassword(input.password),
     doctorId: input.role === "doctor" ? input.doctorId : null,
     photoUrl: input.photoUrl ?? "",
+    assignedDoctorIds: await resolveAssignments(input.role, input.assignedDoctorIds),
   });
   return getUser(user._id.toString());
 }
@@ -98,6 +118,9 @@ export async function updateUser(id: string, input: UpdateUserInput, actorId: st
       doctorId,
       ...(input.active !== undefined && { active: input.active }),
       ...(input.photoUrl !== undefined && { photoUrl: input.photoUrl }),
+      ...((input.assignedDoctorIds !== undefined || role !== existing.role) && {
+        assignedDoctorIds: await resolveAssignments(role, input.assignedDoctorIds),
+      }),
     },
   );
 

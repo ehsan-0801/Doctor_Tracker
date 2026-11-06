@@ -9,6 +9,8 @@
 ## Features
 
 - **Public website** – homepage with a video hero, live network statistics (refreshed every 30 s from the database), services, featured doctors, about and contact sections, plus a searchable **Find a doctor** directory and public doctor profiles. All content is editable by administrators in **Site settings**; only public doctor fields (name, specialization, hospital) are exposed.
+- **Live tracking** – real-time 3D hospital map (React Three Fiber) showing where doctors and staff are (operating theatre, ICU, wards, consultation rooms…) with status (available, busy, in surgery, on break, off duty). People check themselves in; assigned staff can update their doctors; admins see everyone and a 30-day movement history, other roles see doctors only. Admins manage floors and rooms on the **Locations** page.
+- **Real-time chat** – one-to-one messages between each doctor and their assigned staff; admins can message anyone. Unread counts, online status and instant delivery over WebSockets (Socket.IO).
 - **Roles** – Administrator, Management, Front desk (staff) and Doctor, enforced by capability permissions on every API route; menus and actions adapt to the signed-in role. Administrators manage accounts on the **Users** page.
 - **Authentication** – administrator login with hashed passwords, server-side sessions in an `httpOnly` cookie, logout that revokes the session, rate-limited sign-in, protected pages and APIs.
 - **Dashboard** – total doctors, total patients, average patients per doctor, new patients in the last 30 days (with trend), patients-per-doctor chart, monthly registration chart (6/12/24-month period), patients-by-condition chart, recently added patients. All numbers are computed in MongoDB.
@@ -156,6 +158,7 @@ npm run dev                 # http://localhost:4000
 | `MONGODB_URI` | MongoDB connection string including `/doctor_tracker` |
 | `ADMIN_EMAIL` | Administrator email created by `npm run seed` |
 | `ADMIN_PASSWORD` | Administrator password (at least 8 characters), used only by the seed |
+| `REALTIME_SECRET` | Optional (recommended in production). Signs 2-minute WebSocket tokens for live tracking and chat. |
 | `CLOUDINARY_URL` | Optional. `cloudinary://<api_key>:<api_secret>@<cloud_name>` enables doctor photo uploads. The API signs each upload (folders `DocTrack/doctors`, `DocTrack/staff`, `DocTrack/site`; JPG/PNG/WebP only). Run `npm run cloudinary:setup` to verify the credentials and create the folders.; the secret never reaches the browser. |
 
 Seed options:
@@ -163,6 +166,7 @@ Seed options:
 ```bash
 npm run seed                   # admin (if missing) + demo data (only if there are no doctors)
 npm run seed -- --admin-only   # admin only
+npm run seed -- --tracking-only  # rooms, live statuses, staff assignments, sample chats (keeps doctors/patients)
 npm run seed -- --reset        # deletes ALL doctors and patients, re-creates the demo data (15 doctors, 60 patients), resets the admin password
 ```
 
@@ -180,6 +184,7 @@ npm run dev                    # http://localhost:3000
 | Variable | Description |
 |---|---|
 | `API_URL` | Origin of the Express API, used by the server-side `/api` rewrite (default `http://localhost:4000`) |
+| `NEXT_PUBLIC_REALTIME_URL` | Public origin of the Express API for WebSockets (live tracking & chat). Vercel rewrites cannot proxy WebSockets, so the browser connects directly; it authenticates with a short-lived token from `/api/realtime/token`. Local default: `http://<host>:4000`. |
 
 Open http://localhost:3000 and sign in with `ADMIN_EMAIL` / `ADMIN_PASSWORD`.
 

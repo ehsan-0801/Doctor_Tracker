@@ -1,11 +1,13 @@
 import { Suspense } from "react";
 import { AreaMarker } from "@/components/layout/area-marker";
+import { RealtimeProvider } from "@/lib/realtime";
 import { AppHeader } from "@/components/layout/app-header";
 import { AppSidebar } from "@/components/layout/app-sidebar";
 
 export default function DashboardLayout({ children }: LayoutProps<"/">) {
   // The background gradient paints the sidebar column for the full page height (the sidebar itself is fixed).
   return (
+    <RealtimeProvider>
     <div data-area="admin" className="min-h-screen md:bg-[linear-gradient(to_right,var(--sidebar)_72px,transparent_72px)] lg:bg-[linear-gradient(to_right,var(--sidebar)_250px,transparent_250px)]">
       <AreaMarker area="admin" />
       <a
@@ -29,5 +31,6 @@ export default function DashboardLayout({ children }: LayoutProps<"/">) {
         </main>
       </div>
     </div>
+    </RealtimeProvider>
   );
 }

@@ -18,6 +18,8 @@ export const PERMISSIONS = {
   "patients:delete": ["admin"],
   "users:manage": ["admin"],
   "settings:manage": ["admin"],
+  "locations:manage": ["admin"],
+  "tracking:all": ["admin"],
 } as const satisfies Record<string, readonly Role[]>;
 
 export type Permission = keyof typeof PERMISSIONS;

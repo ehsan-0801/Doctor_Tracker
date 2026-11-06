@@ -20,6 +20,7 @@ export const createUserSchema = z
     password,
     doctorId: objectIdSchema.optional(),
     photoUrl: photoUrl.optional(),
+    assignedDoctorIds: z.array(objectIdSchema).max(50).optional(),
   })
   .refine((u) => u.role !== "doctor" || u.doctorId, { message: "Select the doctor this account belongs to", path: ["doctorId"] });
 
@@ -30,6 +31,7 @@ export const updateUserSchema = z
     doctorId: objectIdSchema.nullable().optional(),
     active: z.boolean().optional(),
     photoUrl: photoUrl.optional(),
+    assignedDoctorIds: z.array(objectIdSchema).max(50).optional(),
   })
   .refine((body) => Object.values(body).some((v) => v !== undefined), "Provide at least one field to update");
 

@@ -19,6 +19,8 @@ export interface AuthenticatedUser {
   role: Role;
   doctorId: string | null;
   photoUrl: string;
+  /** Staff/management: doctor records they are assigned to. */
+  assignedDoctorIds: string[];
 }
 
 const hashToken = (token: string) => createHash("sha256").update(token).digest("hex");
@@ -34,6 +36,7 @@ function toAuthenticatedUser(user: {
   role: Role;
   doctorId?: Types.ObjectId | null;
   photoUrl?: string | null;
+  assignedDoctorIds?: Types.ObjectId[] | null;
 }): AuthenticatedUser {
   return {
     id: user._id.toString(),
@@ -42,6 +45,7 @@ function toAuthenticatedUser(user: {
     role: user.role,
     doctorId: user.doctorId ? user.doctorId.toString() : null,
     photoUrl: user.photoUrl ?? "",
+    assignedDoctorIds: (user.assignedDoctorIds ?? []).map((id) => id.toString()),
   };
 }
 
@@ -70,7 +74,7 @@ export async function getSessionUser(token: string): Promise<AuthenticatedUser |
     .lean();
   if (!session) return null;
 
-  const user = await User.findOne({ _id: session.userId, active: true }).select("name email role doctorId photoUrl").lean();
+  const user = await User.findOne({ _id: session.userId, active: true }).select("name email role doctorId photoUrl assignedDoctorIds").lean();
   return user ? toAuthenticatedUser(user) : null;
 }
 

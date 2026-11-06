@@ -8,6 +8,8 @@ const envSchema = z.object({
   CLIENT_ORIGIN: z.string().url().default("http://localhost:3000"),
   // Optional: enables image uploads. Format: cloudinary://<api_key>:<api_secret>@<cloud_name>
   CLOUDINARY_URL: z.string().optional(),
+  // Signs short-lived real-time (WebSocket) tokens. Set a long random value in production.
+  REALTIME_SECRET: z.string().min(32).optional(),
 });
 
 const parsed = envSchema.safeParse(process.env);

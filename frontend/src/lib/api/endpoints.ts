@@ -61,12 +61,13 @@ export interface UserFormInput {
   password: string;
   doctorId?: string;
   photoUrl?: string;
+  assignedDoctorIds?: string[];
 }
 
 export const usersApi = {
   list: (params: UserListParams) => api.list<UserAccount>("/users", { ...params }),
   create: (input: UserFormInput) => api.post<UserAccount>("/users", input),
-  update: (id: string, input: Partial<{ name: string; role: Role; active: boolean; doctorId: string | null; photoUrl: string }>) =>
+  update: (id: string, input: Partial<{ name: string; role: Role; active: boolean; doctorId: string | null; photoUrl: string; assignedDoctorIds: string[] }>) =>
     api.patch<UserAccount>(`/users/${id}`, input),
   resetPassword: (id: string, password: string) => api.post<null>(`/users/${id}/reset-password`, { password }),
 };
@@ -95,4 +96,32 @@ export interface UploadSignature {
 
 export const uploadsApi = {
   signature: (purpose: "doctors" | "staff" | "site") => api.post<UploadSignature>("/uploads/signature", { purpose }),
+};
+
+type T = typeof import("@/types/tracking");
+type Loc = import("@/types/tracking").HospitalLocation;
+
+export const trackingApi = {
+  locations: () => api.get<Loc[]>("/locations"),
+  createLocation: (input: Omit<Loc, "_id">) => api.post<Loc>("/locations", input),
+  updateLocation: (id: string, input: Partial<Omit<Loc, "_id">>) => api.patch<Loc>(`/locations/${id}`, input),
+  deleteLocation: (id: string) => api.delete<null>(`/locations/${id}`),
+  presence: () => api.get<import("@/types/tracking").PresenceView[]>("/presence"),
+  setPresence: (userId: string, input: { locationId: string | null; status: T["PRESENCE_STATUSES"][number]; note: string }) =>
+    api.put<import("@/types/tracking").PresenceView>(`/presence/${userId}`, input),
+  history: (userId: string, days = 7) => api.get<import("@/types/tracking").PresenceEventView[]>(`/presence/${userId}/history`, { days }),
+  realtimeToken: () => api.getQuiet<{ token: string; expiresAt: number }>("/realtime/token"),
+};
+
+export const chatApi = {
+  contacts: () => api.get<import("@/types/tracking").ChatContact[]>("/chat/contacts"),
+  conversations: () => api.get<import("@/types/tracking").ConversationSummary[]>("/chat/conversations"),
+  open: (userId: string) => api.post<{ _id: string; contact: import("@/types/tracking").ChatContact; canSend: boolean }>("/chat/conversations", { userId }),
+  messages: (id: string, before?: string) =>
+    api.get<{ contact: import("@/types/tracking").ChatContact; canSend: boolean; messages: import("@/types/tracking").ChatMessage[]; hasMore: boolean }>(
+      `/chat/conversations/${id}/messages`,
+      { before, limit: 40 },
+    ),
+  send: (id: string, body: string) => api.post<import("@/types/tracking").ChatMessage>(`/chat/conversations/${id}/messages`, { body }),
+  read: (id: string) => api.post<null>(`/chat/conversations/${id}/read`),
 };

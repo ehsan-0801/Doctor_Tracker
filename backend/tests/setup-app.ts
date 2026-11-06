@@ -46,7 +46,7 @@ export function setupTestApp() {
       return ctx.app;
     },
     /** Supertest agent that keeps the session cookie between requests (admin by default). */
-    async loggedInAgent(role: Role = "admin", options: { doctorId?: unknown } = {}) {
+    async loggedInAgent(role: Role = "admin", options: { doctorId?: unknown; assignedDoctorIds?: unknown[] } = {}) {
       const agent = request.agent(ctx.app);
       let credentials = ADMIN;
       if (role !== "admin") {
@@ -58,6 +58,7 @@ export function setupTestApp() {
           email: credentials.email,
           role,
           doctorId: options.doctorId ?? null,
+          assignedDoctorIds: options.assignedDoctorIds ?? [],
           passwordHash: await hashPassword(credentials.password),
         });
       }

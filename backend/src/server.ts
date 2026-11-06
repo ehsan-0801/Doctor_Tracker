@@ -1,11 +1,15 @@
 import { connectDatabase, disconnectDatabase } from "./config/database.js";
 import { env } from "./config/env.js";
+import { createServer } from "node:http";
 import { createApp } from "./app.js";
+import { initRealtime } from "./realtime/server.js";
 
 async function main() {
   await connectDatabase(env.MONGODB_URI);
-  const server = createApp().listen(env.PORT, () => {
-    console.log(`API listening on http://localhost:${env.PORT}`);
+  const server = createServer(createApp());
+  initRealtime(server);
+  server.listen(env.PORT, () => {
+    console.log(`API listening on http://localhost:${env.PORT} (real-time enabled)`);
   });
 
   const shutdown = (signal: string) => {

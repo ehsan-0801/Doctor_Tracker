@@ -4,6 +4,8 @@
  *   npm run seed -- --reset -> also deletes all doctors and patients, re-creates demo data,
  *                              and resets the admin password to ADMIN_PASSWORD
  *   npm run seed -- --admin-only
+ *   npm run seed -- --tracking-only -> (re)creates rooms, live statuses, staff
+ *                              assignments and sample chats; doctors/patients untouched
  *
  * The admin is created from ADMIN_EMAIL / ADMIN_PASSWORD. Without --reset an
  * existing admin's password is never overwritten.
@@ -18,6 +20,7 @@
  *   for every seeded doctor (the doctor's own email).
  */
 import { readFile } from "node:fs/promises";
+import type { Types } from "mongoose";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { z } from "zod";
@@ -27,6 +30,9 @@ import { PRESET_CONDITIONS } from "../constants/conditions.js";
 import { Doctor } from "../models/Doctor.js";
 import { Patient } from "../models/Patient.js";
 import { User } from "../models/User.js";
+import { Conversation, Message } from "../models/Chat.js";
+import { Location } from "../models/Location.js";
+import { Presence, PresenceEvent } from "../models/Presence.js";
 import { hashPassword } from "../services/auth.service.js";
 
 const seedEnv = z
@@ -115,6 +121,106 @@ const FIRST_NAMES = ["Ava", "Liam", "Noah", "Mia", "Zara", "Arif", "Elena", "Kof
 const LAST_NAMES = ["Ahmed", "Garcia", "Nguyen", "Smith", "Rossi", "Khan", "Müller", "Haque", "Tanaka", "Dubois", "Mensah", "Patel", "Novak", "Costa", "Rahman", "Larsen", "Ortiz", "Begum"];
 
 const DAY_MS = 24 * 60 * 60 * 1000;
+
+/** Demo hospital layout: [name, code, type, floor, x, y, w, h] on a 40×22 grid. */
+const LOCATIONS = [
+  ["Reception", "REC", "reception", 0, 0, 0, 10, 7],
+  ["Emergency", "ER", "emergency", 0, 10, 0, 12, 9],
+  ["Pharmacy", "PHA", "pharmacy", 0, 22, 0, 8, 7],
+  ["Radiology", "RAD", "radiology", 0, 30, 0, 10, 9],
+  ["Laboratory", "LAB", "lab", 0, 0, 7, 10, 7],
+  ["Admin Office", "ADM", "office", 0, 30, 9, 10, 5],
+  ["Consultation 1", "C-1", "consultation", 0, 0, 15, 10, 7],
+  ["Consultation 2", "C-2", "consultation", 0, 10, 15, 10, 7],
+  ["Consultation 3", "C-3", "consultation", 0, 20, 15, 10, 7],
+  ["Consultation 4", "C-4", "consultation", 0, 30, 15, 10, 7],
+  ["Operation Theatre 1", "OT-1", "ot", 1, 0, 0, 10, 9],
+  ["Operation Theatre 2", "OT-2", "ot", 1, 10, 0, 10, 9],
+  ["Intensive Care Unit", "ICU", "icu", 1, 20, 0, 20, 9],
+  ["Ward A", "W-A", "ward", 1, 0, 11, 14, 11],
+  ["Ward B", "W-B", "ward", 1, 14, 11, 14, 11],
+  ["Doctors' Lounge", "LNG", "lounge", 1, 28, 11, 12, 11],
+] as const;
+
+/** Where each demo doctor is right now: [location code | null, status, note]. */
+const DOCTOR_PRESENCE: [string | null, string, string][] = [
+  ["OT-1", "in_surgery", "Coronary bypass"],
+  ["C-1", "available", ""],
+  ["ICU", "busy", "ICU rounds"],
+  ["C-2", "busy", "Dialysis review"],
+  ["OT-2", "in_surgery", "Neurosurgery assist"],
+  ["W-A", "busy", "Ward rounds"],
+  ["C-3", "available", ""],
+  ["ER", "busy", "Emergency cover"],
+  ["W-B", "busy", "Ward rounds"],
+  ["LNG", "on_break", ""],
+  ["C-4", "available", ""],
+  [null, "off_duty", ""],
+  ["RAD", "busy", "Reviewing scans"],
+  ["LNG", "on_break", ""],
+  [null, "off_duty", ""],
+];
+
+/** Live tracking demo: rooms, current locations, staff assignments and sample chats. */
+async function seedTracking() {
+  await Promise.all([Location.deleteMany({}), Presence.deleteMany({}), PresenceEvent.deleteMany({}), Conversation.deleteMany({}), Message.deleteMany({})]);
+  const locations = await Location.insertMany(LOCATIONS.map(([name, code, type, floor, x, y, w, h]) => ({ name, code, type, floor, x, y, w, h })));
+  const byCode = new Map<string, Types.ObjectId>(locations.map((l) => [l.code as string, l._id]));
+
+  const doctors = await Doctor.find().sort({ createdAt: 1 }).select("_id").lean();
+  const doctorUsers = await User.find({ role: "doctor" }).select("_id doctorId").lean();
+  const userByDoctor = new Map(doctorUsers.map((u) => [u.doctorId!.toString(), u._id]));
+  const [sam, morgan, admin] = await Promise.all([
+    User.findOne({ email: "staff@doctortracker.com" }).select("_id").lean(),
+    User.findOne({ email: "management@doctortracker.com" }).select("_id").lean(),
+    User.findOne({ email: seedEnv.ADMIN_EMAIL }).select("_id").lean(),
+  ]);
+
+  // Front desk supports the first 8 doctors, management the rest.
+  if (sam) await User.updateOne({ _id: sam._id }, { assignedDoctorIds: doctors.slice(0, 8).map((d) => d._id) });
+  if (morgan) await User.updateOne({ _id: morgan._id }, { assignedDoctorIds: doctors.slice(8).map((d) => d._id) });
+
+  const presences = doctors.flatMap((d, i) => {
+    const userId = userByDoctor.get(d._id.toString());
+    const [code, status, note] = DOCTOR_PRESENCE[i % DOCTOR_PRESENCE.length]!;
+    return userId ? [{ userId, locationId: code ? byCode.get(code) : null, status, note }] : [];
+  });
+  if (sam) presences.push({ userId: sam._id, locationId: byCode.get("REC")!, status: "available", note: "Front desk" });
+  if (morgan) presences.push({ userId: morgan._id, locationId: byCode.get("ADM")!, status: "busy", note: "" });
+  if (admin) presences.push({ userId: admin._id, locationId: byCode.get("ADM")!, status: "available", note: "" });
+  await Presence.insertMany(presences);
+  await PresenceEvent.insertMany(presences.map((p) => ({ ...p, updatedBy: p.userId })));
+
+  // Sample conversations.
+  const firstDoctorUser = doctors[0] && userByDoctor.get(doctors[0]._id.toString());
+  const threads: [Types.ObjectId, Types.ObjectId, [Types.ObjectId, string][]][] = [];
+  if (firstDoctorUser && sam) {
+    threads.push([firstDoctorUser, sam._id, [
+      [sam._id, "Good morning Doctor, your 10:30 patient has checked in at reception."],
+      [firstDoctorUser, "Thanks Sam. I'm finishing in OT-1, please ask them to wait in Consultation 1."],
+      [sam._id, "Will do. I'll let you know when the scan results arrive."],
+    ]]);
+  }
+  if (admin && morgan) {
+    threads.push([admin._id, morgan._id, [
+      [admin._id, "Morgan, can you review this week's ward staffing before Friday?"],
+      [morgan._id, "Yes, I'll send the plan by Thursday afternoon."],
+    ]]);
+  }
+  let minutesAgo = threads.length * 30;
+  for (const [a, b, messages] of threads) {
+    const key = [String(a), String(b)].sort().join(":");
+    const conversation = await Conversation.create({ key, participants: [a, b] });
+    let last: Date = new Date();
+    for (const [senderId, body] of messages) {
+      last = new Date(Date.now() - minutesAgo-- * 60_000);
+      await Message.create({ conversationId: conversation._id, senderId, body, createdAt: last });
+    }
+    const lastMessage = messages.at(-1)!;
+    await Conversation.updateOne({ _id: conversation._id }, { lastMessage: lastMessage[1], lastMessageAt: last, lastSenderId: lastMessage[0], reads: [{ userId: lastMessage[0], at: last }] });
+  }
+  console.log(`Created ${locations.length} locations, ${presences.length} live statuses and ${threads.length} sample conversations`);
+}
 const daysAgo = (days: number) => new Date(Date.now() - days * DAY_MS - Math.floor(random() * DAY_MS));
 
 async function seedAdmin(photoUrl = "") {
@@ -201,15 +307,20 @@ async function seedDemoData(photos: Map<string, string>) {
   await Patient.insertMany(patients, { timestamps: false });
   console.log(`Created ${doctors.length} doctors and ${patients.length} patients`);
   await seedDemoUsers(doctors, photos);
+  await seedTracking();
 }
 
 async function main() {
   await connectDatabase(seedEnv.MONGODB_URI);
-  await Promise.all([User.syncIndexes(), Doctor.syncIndexes(), Patient.syncIndexes()]);
-  const photos = await uploadPhotos([
+  await Promise.all([User.syncIndexes(), Doctor.syncIndexes(), Patient.syncIndexes(), Location.syncIndexes(), Presence.syncIndexes(), PresenceEvent.syncIndexes(), Conversation.syncIndexes(), Message.syncIndexes()]);
+  const photos = args.has("--tracking-only") ? new Map<string, string>() : await uploadPhotos([
     ...DOCTORS.map(([name]) => ({ slug: slugify(name), folder: "DocTrack/doctors" as const })),
     ...["administrator", "morgan-lee", "sam-rivera"].map((slug) => ({ slug, folder: "DocTrack/staff" as const })),
   ]);
+  if (args.has("--tracking-only")) {
+    await seedTracking();
+    return;
+  }
   await seedAdmin(photos.get("administrator") ?? "");
   if (!args.has("--admin-only")) await seedDemoData(photos);
 }

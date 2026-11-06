@@ -41,6 +41,7 @@ export interface UserAccount {
   active: boolean;
   photoUrl?: string;
   doctor: { _id: string; name: string; specialization: string } | null;
+  assignedDoctors?: { _id: string; name: string }[];
   lastLoginAt: string | null;
   createdAt: string;
 }
