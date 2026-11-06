@@ -5,16 +5,19 @@ import type { UpdateSettingsInput } from "../validators/settings.validator.js";
 
 const KEY = "site";
 
-/** Returns the settings document, creating it with defaults on first use. */
+/**
+ * Returns the settings document, creating it with defaults on first use.
+ * Hydrated (not lean) so fields added after the document was created — such as
+ * the Bangla translations — receive their schema defaults.
+ */
 export async function getSettings() {
-  const settings = await SiteSettings.findOneAndUpdate(
+  const doc = await SiteSettings.findOneAndUpdate(
     { key: KEY },
     { $setOnInsert: { key: KEY, services: DEFAULT_SERVICES } },
     { upsert: true, new: true, setDefaultsOnInsert: true },
-  )
-    .select("-_id -__v -key")
-    .lean();
-  return settings!;
+  );
+  const { _id, key, __v, ...settings } = doc!.toObject();
+  return settings;
 }
 
 export async function updateSettings(input: UpdateSettingsInput) {

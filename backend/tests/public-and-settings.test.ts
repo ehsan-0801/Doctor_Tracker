@@ -39,7 +39,7 @@ describe("public website API", () => {
     const res = await request(t.app).get("/api/public/doctors?specialization=Neurology");
     expect(res.status).toBe(200);
     expect(res.body.pagination.total).toBe(1);
-    expect(Object.keys(res.body.data[0]).sort()).toEqual(["_id", "hospital", "name", "specialization"]);
+    expect(Object.keys(res.body.data[0]).sort()).toEqual(["_id", "hospital", "name", "photoUrl", "qualifications", "specialization"]);
     expect((await request(t.app).get("/api/public/doctors?limit=500")).status).toBe(400);
   });
 
@@ -69,6 +69,15 @@ describe("site settings", () => {
     expect(site.hospitalName).toBe("City Care");
     expect(site.announcements.map((x: { title: string }) => x.title)).toEqual(["Flu clinic open"]);
     expect(site.featuredDoctors.map((d: { name: string }) => d.name)).toEqual(["Dr. B", "Dr. A"]);
+  });
+
+  it("stores optional Bangla content alongside English", async () => {
+    const admin = await t.loggedInAgent();
+    const body = { ...validSettings(), heroTitleBn: "সঠিক ডাক্তার", services: [{ title: "Cardiology", description: "Heart care", icon: "heart", titleBn: "কার্ডিওলজি", descriptionBn: "হৃদ্‌রোগ" }] };
+    await admin.put("/api/settings").send(body).expect(200);
+    const site = (await request(t.app).get("/api/public/site")).body.data;
+    expect(site.heroTitleBn).toBe("সঠিক ডাক্তার");
+    expect(site.services[0].titleBn).toBe("কার্ডিওলজি");
   });
 
   it("validates content and featured doctor references", async () => {

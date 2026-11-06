@@ -4,12 +4,16 @@ export type ServiceIcon = (typeof SERVICE_ICONS)[number];
 export interface SiteService {
   title: string;
   description: string;
+  titleBn?: string;
+  descriptionBn?: string;
   icon: ServiceIcon;
 }
 
 export interface SiteAnnouncement {
   title: string;
   body: string;
+  titleBn?: string;
+  bodyBn?: string;
   active: boolean;
 }
 
@@ -19,6 +23,17 @@ export interface SiteContact {
   email: string;
   address: string;
   hours: string;
+  addressBn?: string;
+  hoursBn?: string;
+}
+
+/** Optional Bangla versions of the top-level content fields. */
+export interface SiteContentBn {
+  hospitalNameBn?: string;
+  taglineBn?: string;
+  heroTitleBn?: string;
+  heroSubtitleBn?: string;
+  aboutBn?: string;
 }
 
 export interface PublicDoctor {
@@ -26,9 +41,11 @@ export interface PublicDoctor {
   name: string;
   specialization: string;
   hospital: string;
+  qualifications?: string;
+  photoUrl?: string;
 }
 
-export interface PublicSite {
+export interface PublicSite extends SiteContentBn {
   hospitalName: string;
   tagline: string;
   heroTitle: string;
@@ -45,7 +62,7 @@ export interface PublicSite {
 }
 
 /** Admin-editable settings (GET/PUT /api/settings). */
-export interface SiteSettings {
+export interface SiteSettings extends SiteContentBn {
   hospitalName: string;
   tagline: string;
   heroTitle: string;

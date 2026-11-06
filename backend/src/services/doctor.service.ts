@@ -6,7 +6,7 @@ import { containsPattern, dateRangeFilter } from "../utils/query.js";
 import { buildPagination } from "../utils/response.js";
 import type { CreateDoctorInput, DoctorListQuery } from "../validators/doctor.validator.js";
 
-const LIST_FIELDS = "name specialization hospital phone email createdAt updatedAt";
+const LIST_FIELDS = "name specialization hospital phone email qualifications photoUrl createdAt updatedAt";
 
 /** Map of doctorId -> patient count, computed in one aggregation for the given doctors. */
 async function countPatientsByDoctor(doctorIds: Types.ObjectId[]): Promise<Map<string, number>> {

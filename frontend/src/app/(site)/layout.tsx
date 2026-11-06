@@ -1,4 +1,5 @@
 import { Suspense } from "react";
+import { LanguageProvider } from "@/components/site/language-provider";
 import { SiteFooter } from "@/components/site/site-footer";
 import { SiteHeader } from "@/components/site/site-header";
 import { getPublicSite } from "@/lib/server/public-api";
@@ -6,6 +7,7 @@ import { getPublicSite } from "@/lib/server/public-api";
 export default async function SiteLayout({ children }: LayoutProps<"/">) {
   const site = await getPublicSite();
   return (
+    <LanguageProvider>
     <div data-area="site" className="flex min-h-screen flex-col">
       <a
         href="#site-main"
@@ -22,5 +24,6 @@ export default async function SiteLayout({ children }: LayoutProps<"/">) {
       </main>
       <SiteFooter site={site} />
     </div>
+    </LanguageProvider>
   );
 }

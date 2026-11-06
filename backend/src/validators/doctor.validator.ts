@@ -9,6 +9,9 @@ export const createDoctorSchema = z.object({
   hospital: z.string().trim().min(2, "Hospital is required").max(160),
   phone: z.string().trim().regex(PHONE_PATTERN, "Enter a valid phone number"),
   email: z.string().trim().toLowerCase().max(254).pipe(z.email("Enter a valid email")),
+  qualifications: z.string().trim().max(160).optional(),
+  // Only https image URLs, so the public site never loads mixed or script content.
+  photoUrl: z.union([z.literal(""), z.url({ protocol: /^https$/, message: "Use an https:// image URL" }).max(500)]).optional(),
 });
 
 export const doctorListQuerySchema = withDateRangeCheck(

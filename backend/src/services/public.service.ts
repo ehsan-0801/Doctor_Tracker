@@ -6,7 +6,7 @@ import { buildPagination } from "../utils/response.js";
 import { getSettings } from "./settings.service.js";
 
 /** Fields any visitor may see. Contact details stay private. */
-const PUBLIC_DOCTOR_FIELDS = "name specialization hospital";
+const PUBLIC_DOCTOR_FIELDS = "name specialization hospital qualifications photoUrl";
 
 export async function getPublicSite() {
   const settings = await getSettings();

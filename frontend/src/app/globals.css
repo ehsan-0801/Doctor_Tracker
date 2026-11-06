@@ -37,6 +37,9 @@
   --color-success: var(--success);
   --color-warning: var(--warning);
   --color-info: var(--info);
+  --color-info-soft: var(--info-soft);
+  --color-info-soft-foreground: var(--info-soft-foreground);
+  --color-rose-soft: var(--rose-soft);
   --color-popover-foreground: var(--popover-foreground);
   --color-popover: var(--popover);
   --color-card-foreground: var(--card-foreground);
@@ -96,6 +99,18 @@
   --sidebar-border: #0b5d48;
   --sidebar-ring: #7dd3fc;
   --brand-dot: #7dd3fc;
+  --rose-soft: #fce7f3;
+  --info-soft: #dbeafe;
+  --info-soft-foreground: #1e40af;
+}
+
+/* Public website — Clean Healthcare White + Emerald + Soft Blue (rose for small accents) */
+body:has([data-area="site"]) {
+  --muted-foreground: #475569;
+  --accent: #ecfdf5;
+  --accent-foreground: #065f46;
+  --secondary: #dbeafe;
+  --secondary-foreground: #1e40af;
 }
 
 /* Hospital / admin portal — Deep Emerald & Neutral Gray */

@@ -10,11 +10,24 @@ export const updateSettingsSchema = z.object({
   heroTitle: text(120, 3),
   heroSubtitle: text(300),
   about: text(1500),
+  hospitalNameBn: text(120).default(""),
+  taglineBn: text(160).default(""),
+  heroTitleBn: text(120).default(""),
+  heroSubtitleBn: text(300).default(""),
+  aboutBn: text(1500).default(""),
   services: z
-    .array(z.object({ title: text(60, 2), description: text(240, 2), icon: z.enum(SERVICE_ICONS) }))
+    .array(
+      z.object({
+        title: text(60, 2),
+        description: text(240, 2),
+        titleBn: text(60).default(""),
+        descriptionBn: text(240).default(""),
+        icon: z.enum(SERVICE_ICONS),
+      }),
+    )
     .max(12, "Up to 12 services"),
   announcements: z
-    .array(z.object({ title: text(100, 2), body: text(400), active: z.boolean() }))
+    .array(z.object({ title: text(100, 2), body: text(400), titleBn: text(100).default(""), bodyBn: text(400).default(""), active: z.boolean() }))
     .max(10, "Up to 10 announcements"),
   contact: z.object({
     phone: text(40),
@@ -22,6 +35,8 @@ export const updateSettingsSchema = z.object({
     email: z.union([z.literal(""), z.string().trim().toLowerCase().max(254).pipe(z.email("Enter a valid email"))]),
     address: text(200),
     hours: text(120),
+    addressBn: text(200).default(""),
+    hoursBn: text(120).default(""),
   }),
   homepage: z.object({
     showStats: z.boolean(),

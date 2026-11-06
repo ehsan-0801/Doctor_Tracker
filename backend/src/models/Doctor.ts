@@ -7,6 +7,9 @@ const doctorSchema = new Schema(
     hospital: { type: String, required: true, trim: true, maxlength: 160 },
     phone: { type: String, required: true, trim: true, maxlength: 30 },
     email: { type: String, required: true, unique: true, lowercase: true, trim: true, maxlength: 254 },
+    // Optional public profile basics, shown on the website when present.
+    qualifications: { type: String, trim: true, maxlength: 160, default: "" },
+    photoUrl: { type: String, trim: true, maxlength: 500, default: "" },
   },
   { timestamps: true },
 );

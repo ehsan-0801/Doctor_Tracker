@@ -13,6 +13,15 @@ describe("doctors", () => {
     expect(res.body.data).toMatchObject({ email: "jane.doe@example.com", patientCount: 0 });
   });
 
+  it("accepts optional profile basics and rejects non-https photo URLs", async () => {
+    const agent = await t.loggedInAgent();
+    const ok = await agent.post("/api/doctors").send(doctorInput({ qualifications: "MBBS, MD", photoUrl: "https://cdn.example.com/a.jpg" }));
+    expect(ok.status).toBe(201);
+    expect(ok.body.data.qualifications).toBe("MBBS, MD");
+    const bad = await agent.post("/api/doctors").send(doctorInput({ photoUrl: "javascript:alert(1)" }));
+    expect(bad.status).toBe(400);
+  });
+
   it("validates every required field", async () => {
     const agent = await t.loggedInAgent();
     const res = await agent.post("/api/doctors").send({ name: "X", phone: "abc", email: "nope" });

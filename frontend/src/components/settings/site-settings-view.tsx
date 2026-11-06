@@ -35,14 +35,31 @@ const schema = z.object({
   heroTitle: text(120, 3, "Headline is required"),
   heroSubtitle: text(300),
   about: text(1500),
-  services: z.array(z.object({ title: text(60, 2, "Title is required"), description: text(240, 2, "Description is required"), icon: z.enum(SERVICE_ICONS) })).max(12),
-  announcements: z.array(z.object({ title: text(100, 2, "Title is required"), body: text(400), active: z.boolean() })).max(10),
+  hospitalNameBn: text(120),
+  taglineBn: text(160),
+  heroTitleBn: text(120),
+  heroSubtitleBn: text(300),
+  aboutBn: text(1500),
+  services: z
+    .array(
+      z.object({
+        title: text(60, 2, "Title is required"),
+        description: text(240, 2, "Description is required"),
+        titleBn: text(60),
+        descriptionBn: text(240),
+        icon: z.enum(SERVICE_ICONS),
+      }),
+    )
+    .max(12),
+  announcements: z.array(z.object({ title: text(100, 2, "Title is required"), body: text(400), titleBn: text(100), bodyBn: text(400), active: z.boolean() })).max(10),
   contact: z.object({
     phone: text(40),
     emergencyPhone: text(40),
     email: z.union([z.literal(""), z.string().trim().pipe(z.email("Enter a valid email"))]),
     address: text(200),
     hours: text(120),
+    addressBn: text(200),
+    hoursBn: text(120),
   }),
   homepage: z.object({ showStats: z.boolean(), showDoctors: z.boolean() }),
   featured: z.array(z.object({ _id: z.string(), name: z.string() })).max(8, "Feature up to 8 doctors"),
@@ -55,9 +72,14 @@ const toForm = (s: SiteSettings): FormValues => ({
   heroTitle: s.heroTitle,
   heroSubtitle: s.heroSubtitle,
   about: s.about,
-  services: s.services ?? [],
-  announcements: s.announcements ?? [],
-  contact: s.contact,
+  hospitalNameBn: s.hospitalNameBn ?? "",
+  taglineBn: s.taglineBn ?? "",
+  heroTitleBn: s.heroTitleBn ?? "",
+  heroSubtitleBn: s.heroSubtitleBn ?? "",
+  aboutBn: s.aboutBn ?? "",
+  services: (s.services ?? []).map((x) => ({ ...x, titleBn: x.titleBn ?? "", descriptionBn: x.descriptionBn ?? "" })),
+  announcements: (s.announcements ?? []).map((x) => ({ ...x, titleBn: x.titleBn ?? "", bodyBn: x.bodyBn ?? "" })),
+  contact: { ...s.contact, addressBn: s.contact.addressBn ?? "", hoursBn: s.contact.hoursBn ?? "" },
   homepage: { showStats: s.homepage.showStats, showDoctors: s.homepage.showDoctors },
   featured: (s.featuredDoctors ?? []).map((d) => ({ _id: d._id, name: d.name })),
 });
@@ -156,6 +178,26 @@ export function SiteSettingsView() {
             <FormField id="about" label="About us" error={errors.about?.message} hint="Shown in the About section. Line breaks are kept.">
               <Textarea {...fieldAria("about", errors.about?.message)} rows={5} {...register("about")} />
             </FormField>
+            <fieldset lang="bn" className="space-y-4 rounded-lg border border-dashed p-4">
+              <legend className="px-1 text-sm font-medium">বাংলা (Bangla) — optional, falls back to English</legend>
+              <div className="grid gap-4 md:grid-cols-2">
+                <FormField id="hospitalNameBn" label="হাসপাতালের নাম">
+                  <Input id="hospitalNameBn" className="h-10" {...register("hospitalNameBn")} />
+                </FormField>
+                <FormField id="taglineBn" label="ট্যাগলাইন">
+                  <Input id="taglineBn" className="h-10" {...register("taglineBn")} />
+                </FormField>
+              </div>
+              <FormField id="heroTitleBn" label="শিরোনাম">
+                <Input id="heroTitleBn" className="h-10" {...register("heroTitleBn")} />
+              </FormField>
+              <FormField id="heroSubtitleBn" label="ভূমিকা">
+                <Textarea id="heroSubtitleBn" rows={2} {...register("heroSubtitleBn")} />
+              </FormField>
+              <FormField id="aboutBn" label="আমাদের সম্পর্কে">
+                <Textarea id="aboutBn" rows={4} {...register("aboutBn")} />
+              </FormField>
+            </fieldset>
           </SettingsSection>
 
           <SettingsSection title="Contact" description="Used in the header, contact section and footer. Leave a field empty to hide it.">
@@ -180,6 +222,14 @@ export function SiteSettingsView() {
             <FormField id="contact.address" label="Address" error={errors.contact?.address?.message}>
               <Input {...fieldAria("contact.address", errors.contact?.address?.message)} className="h-10" {...register("contact.address")} />
             </FormField>
+            <div lang="bn" className="grid gap-4 md:grid-cols-2">
+              <FormField id="contact.addressBn" label="ঠিকানা (বাংলা)">
+                <Input id="contact.addressBn" className="h-10" {...register("contact.addressBn")} />
+              </FormField>
+              <FormField id="contact.hoursBn" label="সময়সূচি (বাংলা)">
+                <Input id="contact.hoursBn" className="h-10" {...register("contact.hoursBn")} />
+              </FormField>
+            </div>
           </SettingsSection>
 
           <SettingsSection title="Homepage" description="Choose which live sections appear and which doctors are featured.">
@@ -224,7 +274,7 @@ export function SiteSettingsView() {
             title="Services"
             description="Departments and services listed on the homepage (up to 12)."
             action={
-              <Button type="button" variant="outline" onClick={() => services.append({ title: "", description: "", icon: "stethoscope" })} disabled={services.fields.length >= 12}>
+              <Button type="button" variant="outline" onClick={() => services.append({ title: "", description: "", titleBn: "", descriptionBn: "", icon: "stethoscope" })} disabled={services.fields.length >= 12}>
                 <Plus aria-hidden /> Add service
               </Button>
             }
@@ -259,6 +309,8 @@ export function SiteSettingsView() {
                     <div className="space-y-2">
                       <Input aria-label={`Service ${index + 1} title`} aria-invalid={!!e?.title || undefined} placeholder="Title" className="h-10" {...register(`services.${index}.title`)} />
                       <Textarea aria-label={`Service ${index + 1} description`} aria-invalid={!!e?.description || undefined} placeholder="Short description" rows={2} {...register(`services.${index}.description`)} />
+                      <Input lang="bn" aria-label={`Service ${index + 1} title in Bangla`} placeholder="শিরোনাম (বাংলা, ঐচ্ছিক)" className="h-10" {...register(`services.${index}.titleBn`)} />
+                      <Textarea lang="bn" aria-label={`Service ${index + 1} description in Bangla`} placeholder="সংক্ষিপ্ত বিবরণ (বাংলা, ঐচ্ছিক)" rows={2} {...register(`services.${index}.descriptionBn`)} />
                       {(e?.title || e?.description) && <p className="text-xs text-destructive">{e?.title?.message ?? e?.description?.message}</p>}
                     </div>
                     <div className="flex gap-1 md:flex-col">
@@ -282,7 +334,7 @@ export function SiteSettingsView() {
             title="Announcements"
             description="Short notices shown in a banner at the top of the homepage (up to 10)."
             action={
-              <Button type="button" variant="outline" onClick={() => announcements.append({ title: "", body: "", active: true })} disabled={announcements.fields.length >= 10}>
+              <Button type="button" variant="outline" onClick={() => announcements.append({ title: "", body: "", titleBn: "", bodyBn: "", active: true })} disabled={announcements.fields.length >= 10}>
                 <Plus aria-hidden /> Add announcement
               </Button>
             }
@@ -296,6 +348,8 @@ export function SiteSettingsView() {
                     <div className="space-y-2">
                       <Input aria-label={`Announcement ${index + 1} title`} aria-invalid={!!e?.title || undefined} placeholder="Title" className="h-10" {...register(`announcements.${index}.title`)} />
                       <Input aria-label={`Announcement ${index + 1} details`} placeholder="Details (optional)" className="h-10" {...register(`announcements.${index}.body`)} />
+                      <Input lang="bn" aria-label={`Announcement ${index + 1} title in Bangla`} placeholder="শিরোনাম (বাংলা, ঐচ্ছিক)" className="h-10" {...register(`announcements.${index}.titleBn`)} />
+                      <Input lang="bn" aria-label={`Announcement ${index + 1} details in Bangla`} placeholder="বিস্তারিত (বাংলা, ঐচ্ছিক)" className="h-10" {...register(`announcements.${index}.bodyBn`)} />
                       {e?.title && <p className="text-xs text-destructive">{e.title.message}</p>}
                     </div>
                     <div className="flex items-center gap-3 md:flex-col md:items-end">
