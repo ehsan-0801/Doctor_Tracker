@@ -5,9 +5,9 @@ test("dashboard shows seeded totals and charts", async ({ page }) => {
   await signIn(page);
   const stats = page.getByRole("region", { name: "Key statistics" });
   await expect(stats.getByText("Total doctors")).toBeVisible();
-  // The seed creates 15 doctors and 180 patients.
+  // The seed creates 15 doctors and 60 patients.
   await expect(stats.locator("p.text-\\[28px\\]").nth(0)).toHaveText("15");
-  await expect(stats.locator("p.text-\\[28px\\]").nth(1)).toHaveText("180");
+  await expect(stats.locator("p.text-\\[28px\\]").nth(1)).toHaveText("60");
   for (const title of ["Patients per doctor", "Patient registrations", "Patients by condition", "Recently added patients"]) {
     await expect(page.getByRole("heading", { name: title })).toBeVisible();
   }

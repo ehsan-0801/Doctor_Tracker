@@ -8,11 +8,19 @@
  * The admin is created from ADMIN_EMAIL / ADMIN_PASSWORD. Without --reset an
  * existing admin's password is never overwritten.
  *
+ * When CLOUDINARY_URL is valid, avatars in seed-assets/avatars (DiceBear
+ * "Notionists" by Zoish, CC0 1.0) are uploaded to DocTrack/doctors and
+ * DocTrack/staff and attached to doctors and accounts; otherwise photos are skipped.
+ *
  * Demo data also creates one account per role, all using ADMIN_PASSWORD:
  *   management@doctortracker.com, staff@doctortracker.com, and a doctor login
  *   for every seeded doctor (the doctor's own email).
  */
+import { readFile } from "node:fs/promises";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 import { z } from "zod";
+import { parseCloudinaryUrl, signParams } from "../config/cloudinary.js";
 import { connectDatabase, disconnectDatabase } from "../config/database.js";
 import { PRESET_CONDITIONS } from "../constants/conditions.js";
 import { Doctor } from "../models/Doctor.js";
@@ -25,10 +33,45 @@ const seedEnv = z
     MONGODB_URI: z.string().min(1),
     ADMIN_EMAIL: z.string().trim().toLowerCase().pipe(z.email()),
     ADMIN_PASSWORD: z.string().min(8, "ADMIN_PASSWORD must be at least 8 characters"),
+    CLOUDINARY_URL: z.string().optional(),
   })
   .parse(process.env);
 
 const args = new Set(process.argv.slice(2));
+const PATIENT_COUNT = 60;
+const AVATAR_DIR = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../seed-assets/avatars");
+const slugify = (name: string) => name.replace(/^Dr\.\s*/, "").toLowerCase().replace(/[^a-z]+/g, "-").replace(/^-|-$/g, "");
+
+/**
+ * Uploads seed avatars to Cloudinary once per run (fixed public ids, so reruns
+ * overwrite instead of duplicating). Returns slug -> https URL, or an empty map
+ * when Cloudinary is not configured or rejects the credentials.
+ */
+async function uploadAvatars(entries: { slug: string; folder: "DocTrack/doctors" | "DocTrack/staff" }[]) {
+  const urls = new Map<string, string>();
+  const cloudinary = parseCloudinaryUrl(seedEnv.CLOUDINARY_URL);
+  if (!cloudinary) {
+    console.warn("CLOUDINARY_URL not set or invalid: skipping photos");
+    return urls;
+  }
+  for (const { slug, folder } of entries) {
+    const params = { folder, overwrite: "true", public_id: slug, timestamp: Math.floor(Date.now() / 1000) };
+    const form = new FormData();
+    form.append("file", new Blob([await readFile(path.join(AVATAR_DIR, `${slug}.png`))], { type: "image/png" }), `${slug}.png`);
+    for (const [key, value] of Object.entries(params)) form.append(key, String(value));
+    form.append("api_key", cloudinary.apiKey);
+    form.append("signature", signParams(params, cloudinary.apiSecret));
+    const res = await fetch(`https://api.cloudinary.com/v1_1/${cloudinary.cloudName}/image/upload`, { method: "POST", body: form });
+    const body = (await res.json()) as { secure_url?: string; error?: { message: string } };
+    if (!res.ok || !body.secure_url) {
+      console.warn(`Photo upload failed (${body.error?.message ?? res.status}): skipping photos`);
+      return new Map<string, string>();
+    }
+    urls.set(slug, body.secure_url);
+  }
+  console.log(`Uploaded ${urls.size} photos to Cloudinary`);
+  return urls;
+}
 
 // Deterministic pseudo-random generator so every seed produces the same data set.
 let state = 20260101;
@@ -73,12 +116,12 @@ const LAST_NAMES = ["Ahmed", "Garcia", "Nguyen", "Smith", "Rossi", "Khan", "Mül
 const DAY_MS = 24 * 60 * 60 * 1000;
 const daysAgo = (days: number) => new Date(Date.now() - days * DAY_MS - Math.floor(random() * DAY_MS));
 
-async function seedAdmin() {
+async function seedAdmin(photoUrl = "") {
   const existing = await User.exists({ email: seedEnv.ADMIN_EMAIL });
   if (existing && args.has("--reset")) {
     await User.updateOne(
       { _id: existing._id },
-      { passwordHash: await hashPassword(seedEnv.ADMIN_PASSWORD), role: "admin", active: true },
+      { passwordHash: await hashPassword(seedEnv.ADMIN_PASSWORD), role: "admin", active: true, ...(photoUrl && { photoUrl }) },
     );
     console.log(`Admin ${seedEnv.ADMIN_EMAIL} password reset`);
     return;
@@ -92,27 +135,28 @@ async function seedAdmin() {
     email: seedEnv.ADMIN_EMAIL,
     role: "admin",
     passwordHash: await hashPassword(seedEnv.ADMIN_PASSWORD),
+    photoUrl,
   });
   console.log(`Admin ${seedEnv.ADMIN_EMAIL} created`);
 }
 
 /** One demo login per role; doctor logins are linked to their doctor records. */
-async function seedDemoUsers(doctors: { _id: unknown; name: string; email: string }[]) {
+async function seedDemoUsers(doctors: { _id: unknown; name: string; email: string; photoUrl?: string }[], photos: Map<string, string>) {
   const passwordHash = await hashPassword(seedEnv.ADMIN_PASSWORD);
   const staffAccounts = [
-    { name: "Morgan Lee", email: "management@doctortracker.com", role: "management" },
-    { name: "Sam Rivera", email: "staff@doctortracker.com", role: "staff" },
+    { name: "Morgan Lee", email: "management@doctortracker.com", role: "management", photoUrl: photos.get("morgan-lee") ?? "" },
+    { name: "Sam Rivera", email: "staff@doctortracker.com", role: "staff", photoUrl: photos.get("sam-rivera") ?? "" },
   ];
   for (const account of staffAccounts) {
     await User.updateOne({ email: account.email }, { $set: { ...account, passwordHash, active: true } }, { upsert: true });
   }
   await User.insertMany(
-    doctors.map((d) => ({ name: d.name, email: d.email, role: "doctor", doctorId: d._id, passwordHash })),
+    doctors.map((d) => ({ name: d.name, email: d.email, role: "doctor", doctorId: d._id, passwordHash, photoUrl: d.photoUrl ?? "" })),
   );
   console.log(`Created demo accounts: management, staff and ${doctors.length} doctors (password = ADMIN_PASSWORD)`);
 }
 
-async function seedDemoData() {
+async function seedDemoData(photos: Map<string, string>) {
   if (args.has("--reset")) {
     await Promise.all([Patient.deleteMany({}), Doctor.deleteMany({}), User.deleteMany({ role: "doctor" })]);
     console.log("Existing doctors and patients removed");
@@ -130,6 +174,7 @@ async function seedDemoData() {
       hospital,
       phone: `+1 555 01${String(index).padStart(2, "0")} ${String(1000 + index * 37).slice(0, 4)}`,
       email: `${slug}@example.com`,
+      photoUrl: photos.get(slugify(name)) ?? "",
       createdAt,
       updatedAt: createdAt,
     };
@@ -137,7 +182,7 @@ async function seedDemoData() {
   const doctors = await Doctor.insertMany(doctorDocs, { timestamps: false });
 
   const patients = [];
-  for (let i = 0; i < 180; i++) {
+  for (let i = 0; i < PATIENT_COUNT; i++) {
     // Skew the distribution so some doctors carry noticeably more patients.
     const doctor = doctors[Math.floor(random() ** 1.6 * doctors.length)]!;
     const doctorAgeDays = Math.floor((Date.now() - doctor.createdAt.getTime()) / DAY_MS);
@@ -154,14 +199,18 @@ async function seedDemoData() {
   }
   await Patient.insertMany(patients, { timestamps: false });
   console.log(`Created ${doctors.length} doctors and ${patients.length} patients`);
-  await seedDemoUsers(doctors);
+  await seedDemoUsers(doctors, photos);
 }
 
 async function main() {
   await connectDatabase(seedEnv.MONGODB_URI);
   await Promise.all([User.syncIndexes(), Doctor.syncIndexes(), Patient.syncIndexes()]);
-  await seedAdmin();
-  if (!args.has("--admin-only")) await seedDemoData();
+  const photos = await uploadAvatars([
+    ...DOCTORS.map(([name]) => ({ slug: slugify(name), folder: "DocTrack/doctors" as const })),
+    ...["administrator", "morgan-lee", "sam-rivera"].map((slug) => ({ slug, folder: "DocTrack/staff" as const })),
+  ]);
+  await seedAdmin(photos.get("administrator") ?? "");
+  if (!args.has("--admin-only")) await seedDemoData(photos);
 }
 
 main()

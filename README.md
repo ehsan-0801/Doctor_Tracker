@@ -163,7 +163,7 @@ Seed options:
 ```bash
 npm run seed                   # admin (if missing) + demo data (only if there are no doctors)
 npm run seed -- --admin-only   # admin only
-npm run seed -- --reset        # deletes ALL doctors and patients, re-creates the demo data, resets the admin password
+npm run seed -- --reset        # deletes ALL doctors and patients, re-creates the demo data (15 doctors, 60 patients), resets the admin password
 ```
 
 Without `--reset` the seed never overwrites the password of an admin that already exists.
@@ -293,6 +293,8 @@ E2E_MONGODB_URI="mongodb+srv://…/doctor_tracker_e2e?retryWrites=true&w=majorit
 | ![Mobile navigation](docs/screenshots/mobile-navigation.png) | ![Mobile filters](docs/screenshots/mobile-patients-filters.png) | ![Mobile doctor details](docs/screenshots/mobile-doctor-details.png) |
 
 ## Media credits
+
+Demo avatars in `backend/seed-assets/avatars` are generated from [DiceBear](https://www.dicebear.com) "Notionists" by Zoish (CC0 1.0). With a valid `CLOUDINARY_URL`, the seed uploads them to `DocTrack/doctors` and `DocTrack/staff`.
 
 The hero and About videos (and their poster frames) are from [Mixkit](https://mixkit.co) under the Mixkit Stock Video Free License (commercial use allowed): "Clinic staff at a hospital reception" (#4766) and "Doctor wearing mask and gloves for protection" (#4745). The DocTrack logo and favicon are original SVGs in this repository.
 
