@@ -4,7 +4,7 @@
 
 ![Dashboard](docs/screenshots/desktop-dashboard.png)
 
-**Live demo:** see the project link and demo credentials provided with the submission. After seeding, the demo accounts are listed in [Demo accounts](#demo-accounts).
+**Live demo:** https://doctrackfast.vercel.app (API: https://doctor-tracker-99os.onrender.com). Sign in with the [demo accounts](#demo-accounts). The API runs on Render's free tier, so the first request after a quiet period can take up to a minute.
 
 ---
 
@@ -35,7 +35,7 @@
 **Beyond the brief**
 
 - **Roles**: administrator, management, front-desk staff and doctor. Each role sees only the pages and data it is allowed to; a doctor sees only their own patients.
-- **Doctor profiles and public website**: admins edit doctor profiles and photos (Cloudinary). The public site has a dynamic homepage, a find-a-doctor directory and doctor profile pages, in English and Bangla.
+- **Doctor profiles and public website**: admins edit doctor profiles and photos (Cloudinary). The public site has a dynamic homepage, a find-a-doctor directory and doctor profile pages, in English and Bangla. Every portal header links to the website, and signed-in visitors see a **Dashboard** button on the website instead of **Staff sign in**.
 - **Live tracking**: a real-time 3D hospital floor map (React Three Fiber) shows where doctors and staff are and their status (available, busy, in surgery, on break, off duty). Admins manage floors and rooms and can see 30 days of movement history.
 - **Real-time chat**: one-to-one messages between doctors and their assigned staff; admins can message anyone. Includes unread counts, online status, emoji, and photo or document attachments up to 10 MB. Chat is available as a floating widget on every portal page.
 - **Notifications**: a bell with an unread count, plus pop-ups for new messages, patient assignments, status changes made on your behalf, and staff assignments.
@@ -294,14 +294,18 @@ Open http://localhost:3000, choose **Staff sign in** and use `ADMIN_EMAIL` / `AD
 
 ### Demo accounts
 
-The seed creates 15 doctors, 60 patients, rooms on two floors, live statuses and sample conversations. Every demo account uses the `ADMIN_PASSWORD` you set:
+The seed creates 15 doctors, 60 patients, rooms on two floors, live statuses and sample conversations. Every demo account uses the `ADMIN_PASSWORD` given to the seed.
 
-| Role | Email |
-|---|---|
-| Administrator | the `ADMIN_EMAIL` you set |
-| Management | `management@doctortracker.com` |
-| Front desk (staff) | `staff@doctortracker.com` |
-| Doctor | each doctor's own email, for example `amelia.hart@example.com` |
+Credentials on the live demo:
+
+| Role | Email | Password | Lands on |
+|---|---|---|---|
+| Administrator | `admin@doctortracker.com` | `Admin1234` | `/dashboard` (full access) |
+| Management | `management@doctortracker.com` | `Admin1234` | `/dashboard` (read-only) |
+| Front desk (staff) | `staff@doctortracker.com` | `Admin1234` | `/dashboard` (patients, assignments) |
+| Doctor | `amelia.hart@example.com` (every seeded doctor signs in with their own email) | `Admin1234` | `/doctor` (own patients only) |
+
+These are demo-only credentials for fictional data. For your own installation, the administrator is the `ADMIN_EMAIL` / `ADMIN_PASSWORD` you set.
 
 The seed also gives one patient the status-check token `DEMO-CARE-2026` and prints that patient's name. Use both on `/check-status`.
 
