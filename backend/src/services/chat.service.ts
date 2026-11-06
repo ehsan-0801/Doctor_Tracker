@@ -1,5 +1,9 @@
 import { Types } from "mongoose";
+import { ATTACHMENT_FORMATS, ATTACHMENT_RESOURCE, type AttachmentKind, chatFolder } from "../constants/chat.js";
 import type { Role } from "../constants/roles.js";
+import { signParams } from "../config/cloudinary.js";
+import { env } from "../config/env.js";
+import type { AttachmentInput } from "../validators/tracking.validator.js";
 import { Conversation, Message } from "../models/Chat.js";
 import { User } from "../models/User.js";
 import { emitToUsers, isOnline } from "../realtime/server.js";
@@ -112,22 +116,74 @@ export async function listMessages(actor: AuthenticatedUser, conversationId: str
   return {
     contact: contactView(other),
     canSend: canChat(subjectOfActor(actor), subjectOf(other)),
-    messages: messages.reverse().map((m) => ({ _id: m._id.toString(), senderId: m.senderId.toString(), body: m.body, createdAt: m.createdAt })),
+    messages: messages.reverse().map((m) => ({
+      _id: m._id.toString(),
+      senderId: m.senderId.toString(),
+      body: m.body,
+      attachment: m.attachment ?? null,
+      createdAt: m.createdAt,
+    })),
     hasMore: messages.length === limit,
   };
 }
 
-export async function sendMessage(actor: AuthenticatedUser, conversationId: string, body: string) {
-  const { conversation, other } = await loadParticipant(conversationId, actor);
-  // Re-check: an assignment may have been removed since the conversation started.
+const escapeRegex = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
+/** Preview text for conversation lists and notifications. */
+export const messagePreview = (body: string, attachment?: { kind: AttachmentKind; name: string } | null) =>
+  (body || (attachment ? (attachment.kind === "image" ? "📷 Photo" : `📎 ${attachment.name}`) : "")).slice(0, 140);
+
+/**
+ * Accepts only files uploaded with this conversation's signature: our Cloudinary
+ * cloud, the matching resource type, the conversation's folder and an allowed format.
+ */
+function assertOwnAttachment(conversationId: string, attachment: AttachmentInput) {
+  const cloudinary = env.cloudinary;
+  if (!cloudinary) throw new ApiError(503, "Attachments are not configured on the server");
+  const pattern = new RegExp(
+    `^https://res\\.cloudinary\\.com/${escapeRegex(cloudinary.cloudName)}/${ATTACHMENT_RESOURCE[attachment.kind]}/upload/v\\d+/` +
+      `${escapeRegex(chatFolder(conversationId))}/[A-Za-z0-9_-]+\\.([a-z0-9]+)$`,
+    "i",
+  );
+  const format = pattern.exec(attachment.url)?.[1]?.toLowerCase();
+  if (!format || !ATTACHMENT_FORMATS[attachment.kind].includes(format)) throw ApiError.badRequest("Invalid attachment");
+}
+
+/** Signs a direct browser → Cloudinary upload into the conversation's folder (participants only). */
+export async function attachmentSignature(actor: AuthenticatedUser, conversationId: string, kind: AttachmentKind) {
+  const cloudinary = env.cloudinary;
+  if (!cloudinary) throw new ApiError(503, "Attachments are not configured on the server");
+  const { other } = await loadParticipant(conversationId, actor);
   if (!canChat(subjectOfActor(actor), subjectOf(other))) throw ApiError.forbidden("You can no longer message this person");
 
-  const message = await Message.create({ conversationId, senderId: actor.id, body });
+  const resource = ATTACHMENT_RESOURCE[kind];
+  const params: Record<string, string | number> = {
+    folder: chatFolder(conversationId),
+    timestamp: Math.floor(Date.now() / 1000),
+    // Raw uploads keep the extension in the public id; images get it from their format.
+    ...(resource === "image" ? { allowed_formats: ATTACHMENT_FORMATS.image.join(",") } : {}),
+  };
+  return {
+    ...params,
+    signature: signParams(params, cloudinary.apiSecret),
+    apiKey: cloudinary.apiKey,
+    uploadUrl: `https://api.cloudinary.com/v1_1/${cloudinary.cloudName}/${resource}/upload`,
+  };
+}
+
+export async function sendMessage(actor: AuthenticatedUser, conversationId: string, body: string, attachment?: AttachmentInput) {
+  const { other } = await loadParticipant(conversationId, actor);
+  // Re-check: an assignment may have been removed since the conversation started.
+  if (!canChat(subjectOfActor(actor), subjectOf(other))) throw ApiError.forbidden("You can no longer message this person");
+  if (attachment) assertOwnAttachment(conversationId, attachment);
+
+  const message = await Message.create({ conversationId, senderId: actor.id, body, attachment });
   const now = message.createdAt;
+  const preview = messagePreview(body, attachment);
   await Conversation.updateOne(
     { _id: conversationId },
     {
-      $set: { lastMessage: body.slice(0, 140), lastMessageAt: now, lastSenderId: actor.id },
+      $set: { lastMessage: preview, lastMessageAt: now, lastSenderId: actor.id },
       $pull: { reads: { userId: new Types.ObjectId(actor.id) } },
     },
   );
@@ -135,16 +191,15 @@ export async function sendMessage(actor: AuthenticatedUser, conversationId: stri
 
   const payload = {
     conversationId,
-    message: { _id: message._id.toString(), senderId: actor.id, body: message.body, createdAt: now },
+    message: { _id: message._id.toString(), senderId: actor.id, body: message.body, attachment: attachment ?? null, createdAt: now },
   };
   emitToUsers([actor.id, other._id.toString()], "chat:message", payload);
   await notify([other._id], {
     type: "message",
     title: `New message from ${actor.name}`,
-    body: body.slice(0, 140),
+    body: preview,
     link: `/messages?c=${conversationId}`,
   });
-  void conversation;
   return payload.message;
 }
 

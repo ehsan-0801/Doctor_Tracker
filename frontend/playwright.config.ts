@@ -33,7 +33,8 @@ export default defineConfig({
       command: "npx tsx src/server.ts",
       cwd: "../backend",
       url: `http://localhost:${API_PORT}/api/health`,
-      env: { MONGODB_URI: mongoUri, PORT: String(API_PORT), CLIENT_ORIGIN: `http://localhost:${WEB_PORT}`, NODE_ENV: "test" },
+      // Fake Cloudinary account: the browser tests intercept every Cloudinary request.
+      env: { MONGODB_URI: mongoUri, CLOUDINARY_URL: "cloudinary://123456789012345:e2e-secret@e2e-cloud", PORT: String(API_PORT), CLIENT_ORIGIN: `http://localhost:${WEB_PORT}`, NODE_ENV: "test" },
       reuseExistingServer: false,
       timeout: 60_000,
     },

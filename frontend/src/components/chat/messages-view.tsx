@@ -4,7 +4,7 @@ import { useInfiniteQuery, useQuery, useQueryClient } from "@tanstack/react-quer
 import { format, isSameDay, isToday, isYesterday } from "date-fns";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
-import { ArrowLeft, Loader2, MessageSquarePlus, MessagesSquare, Send } from "lucide-react";
+import { ArrowLeft, FileText, ImagePlus, Loader2, MessageSquarePlus, MessagesSquare, Paperclip, Send, X } from "lucide-react";
 import { toast } from "sonner";
 import { PageHeader } from "@/components/layout/page-header";
 import { EmptyState, ErrorState } from "@/components/shared/states";
@@ -20,7 +20,29 @@ import { chatApi } from "@/lib/api/endpoints";
 import { queryKeys } from "@/lib/api/query-keys";
 import { ROLE_LABELS } from "@/lib/permissions";
 import { cn } from "@/lib/utils";
-import type { ChatContact, ChatMessage, ConversationSummary } from "@/types/tracking";
+import { cloudinaryImage } from "@/lib/cloudinary";
+import { uploadToCloudinary } from "@/lib/cloudinary-upload";
+import {
+  ATTACHMENT_FORMATS,
+  ATTACHMENT_MAX_BYTES,
+  type AttachmentKind,
+  type ChatAttachment,
+  type ChatContact,
+  type ChatMessage,
+  type ConversationSummary,
+} from "@/types/tracking";
+import { EmojiPicker } from "./emoji-picker";
+import { formatBytes, MessageAttachment } from "./message-attachment";
+
+/** A file being attached: uploading (progress) or uploaded and ready to send. */
+type Pending = {
+  kind: AttachmentKind;
+  name: string;
+  progress: number;
+  attachment?: ChatAttachment;
+};
+
+const acceptFor = (kind: AttachmentKind) => ATTACHMENT_FORMATS[kind].map((f) => `.${f}`).join(",");
 
 const dayLabel = (d: Date) => (isToday(d) ? "Today" : isYesterday(d) ? "Yesterday" : format(d, "EEEE, d MMM"));
 const shortTime = (iso: string | null) => {
@@ -46,13 +68,18 @@ export function MessagesView() {
   const { user } = useSession();
   const queryClient = useQueryClient();
 
-  const conversations = useQuery({ queryKey: queryKeys.chat.conversations, queryFn: chatApi.conversations });
+  const conversations = useQuery({
+    queryKey: queryKeys.chat.conversations,
+    queryFn: chatApi.conversations,
+  });
   const open = (id: string | null) => router.replace(id ? `${pathname}?c=${id}` : pathname, { scroll: false });
 
   const startWith = async (contact: ChatContact) => {
     try {
       const conversation = await chatApi.open(contact._id);
-      await queryClient.invalidateQueries({ queryKey: queryKeys.chat.conversations });
+      await queryClient.invalidateQueries({
+        queryKey: queryKeys.chat.conversations,
+      });
       open(conversation._id);
     } catch (error) {
       toast.error(error instanceof ApiError ? error.message : "Could not start the conversation");
@@ -67,7 +94,11 @@ export function MessagesView() {
           {conversations.error ? (
             <ErrorState message={conversations.error.message} onRetry={() => conversations.refetch()} />
           ) : conversations.isLoading ? (
-            <div className="space-y-3 p-4">{Array.from({ length: 6 }, (_, i) => <Skeleton key={i} className="h-14" />)}</div>
+            <div className="space-y-3 p-4">
+              {Array.from({ length: 6 }, (_, i) => (
+                <Skeleton key={i} className="h-14" />
+              ))}
+            </div>
           ) : !conversations.data?.length ? (
             <EmptyState icon={MessagesSquare} title="No conversations yet" description="Start one with “New message”." />
           ) : (
@@ -78,7 +109,10 @@ export function MessagesView() {
                     type="button"
                     onClick={() => open(c._id)}
                     aria-current={c._id === activeId ? "true" : undefined}
-                    className={cn("flex w-full items-center gap-3 border-b px-4 py-3 text-left hover:bg-muted/60", c._id === activeId && "bg-accent")}
+                    className={cn(
+                      "flex w-full items-center gap-3 border-b px-4 py-3 text-left hover:bg-muted/60",
+                      c._id === activeId && "bg-accent text-accent-foreground hover:bg-accent [&_.text-muted-foreground]:text-accent-foreground/70",
+                    )}
                   >
                     <span className="relative">
                       <UserAvatar name={c.contact.name} photoUrl={c.contact.photoUrl} className="size-11" />
@@ -110,7 +144,13 @@ export function MessagesView() {
         </aside>
         <section className={cn("min-h-0 flex-col", activeId ? "flex" : "hidden md:flex")} aria-label="Conversation">
           {activeId && user ? (
-            <Thread key={activeId} conversationId={activeId} myId={user.id} onBack={() => open(null)} summary={conversations.data?.find((c) => c._id === activeId)} />
+            <Thread
+              key={activeId}
+              conversationId={activeId}
+              myId={user.id}
+              onBack={() => open(null)}
+              summary={conversations.data?.find((c) => c._id === activeId)}
+            />
           ) : (
             <EmptyState icon={MessagesSquare} title="Select a conversation" description="Messages appear here instantly." className="m-auto" />
           )}
@@ -122,7 +162,11 @@ export function MessagesView() {
 
 function NewChatButton({ onPick }: { onPick: (contact: ChatContact) => void }) {
   const [open, setOpen] = useState(false);
-  const contacts = useQuery({ queryKey: queryKeys.chat.contacts, queryFn: chatApi.contacts, enabled: open });
+  const contacts = useQuery({
+    queryKey: queryKeys.chat.contacts,
+    queryFn: chatApi.contacts,
+    enabled: open,
+  });
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
@@ -167,10 +211,18 @@ function Thread({ conversationId, myId, onBack, summary }: { conversationId: str
   const queryClient = useQueryClient();
   const [text, setText] = useState("");
   const [sending, setSending] = useState(false);
+  const [pending, setPending] = useState<Pending | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
+  const textRef = useRef<HTMLTextAreaElement>(null);
+  const imageInput = useRef<HTMLInputElement>(null);
+  const fileInput = useRef<HTMLInputElement>(null);
+  const uploadId = useRef(0);
 
   // Latest page lives under the shared key so real-time messages append to it.
-  const latest = useQuery({ queryKey: queryKeys.chat.messages(conversationId), queryFn: () => chatApi.messages(conversationId) });
+  const latest = useQuery({
+    queryKey: queryKeys.chat.messages(conversationId),
+    queryFn: () => chatApi.messages(conversationId),
+  });
   const older = useInfiniteQuery({
     queryKey: [...queryKeys.chat.messages(conversationId), "older"],
     queryFn: ({ pageParam }) => chatApi.messages(conversationId, pageParam),
@@ -180,7 +232,10 @@ function Thread({ conversationId, myId, onBack, summary }: { conversationId: str
   });
 
   const messages = useMemo<ChatMessage[]>(() => {
-    const olderPages = (older.data?.pages ?? []).slice().reverse().flatMap((p) => p.messages);
+    const olderPages = (older.data?.pages ?? [])
+      .slice()
+      .reverse()
+      .flatMap((p) => p.messages);
     const seen = new Set<string>();
     return [...olderPages, ...(latest.data?.messages ?? [])].filter((m) => !seen.has(m._id) && (seen.add(m._id), true));
   }, [older.data, latest.data]);
@@ -192,7 +247,11 @@ function Thread({ conversationId, myId, onBack, summary }: { conversationId: str
   // Mark read when opened and whenever a new message arrives while open.
   useEffect(() => {
     if (!lastId) return;
-    void chatApi.read(conversationId).then(() => queryClient.invalidateQueries({ queryKey: queryKeys.chat.conversations }));
+    void chatApi.read(conversationId).then(() =>
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.chat.conversations,
+      }),
+    );
   }, [conversationId, lastId, queryClient]);
 
   useLayoutEffect(() => {
@@ -212,18 +271,88 @@ function Thread({ conversationId, myId, onBack, summary }: { conversationId: str
   };
   const hasOlder = older.data ? older.hasNextPage : latest.data?.hasMore;
 
+  const attach = async (kind: AttachmentKind, file: File) => {
+    const ext = file.name.split(".").pop()?.toLowerCase() ?? "";
+    if (!ATTACHMENT_FORMATS[kind].includes(ext)) {
+      return toast.error(kind === "image" ? "Choose a JPG, PNG, WebP or GIF photo." : `Allowed files: ${ATTACHMENT_FORMATS.file.join(", ").toUpperCase()}.`);
+    }
+    if (file.size > ATTACHMENT_MAX_BYTES) return toast.error("Attachments must be 10 MB or smaller.");
+
+    const id = ++uploadId.current;
+    setPending({ kind, name: file.name, progress: 0 });
+    try {
+      const { uploadUrl, ...fields } = await chatApi.attachmentSignature(conversationId, kind);
+      const { apiKey, ...signed } = fields;
+      const result = await uploadToCloudinary(
+        uploadUrl,
+        file,
+        { ...signed, api_key: apiKey },
+        (progress) => id === uploadId.current && setPending((p) => p && { ...p, progress }),
+      );
+      // Ignore a finished upload the user already removed or replaced.
+      if (id !== uploadId.current) return;
+      setPending({
+        kind,
+        name: file.name,
+        progress: 100,
+        attachment: {
+          kind,
+          url: result.secure_url,
+          name: file.name.slice(0, 200),
+          size: result.bytes,
+          width: result.width,
+          height: result.height,
+        },
+      });
+      textRef.current?.focus();
+    } catch (error) {
+      if (id !== uploadId.current) return;
+      setPending(null);
+      toast.error(error instanceof Error ? error.message : "Upload failed");
+    }
+  };
+
+  const clearPending = () => {
+    uploadId.current++;
+    setPending(null);
+  };
+
+  const insertEmoji = (emoji: string) => {
+    const el = textRef.current;
+    const start = el?.selectionStart ?? text.length;
+    const end = el?.selectionEnd ?? text.length;
+    setText(text.slice(0, start) + emoji + text.slice(end));
+    requestAnimationFrame(() => {
+      el?.focus();
+      el?.setSelectionRange(start + emoji.length, start + emoji.length);
+    });
+  };
+
+  const uploading = !!pending && !pending.attachment;
+  const ready = !!text.trim() || !!pending?.attachment;
+
   const send = async () => {
     const body = text.trim();
-    if (!body || sending) return;
+    if (!ready || uploading || sending) return;
+    const draft = { text, pending };
+    // Clear right away: the socket often delivers the message before this request
+    // resolves, and anything typed or attached meanwhile must survive.
+    setText("");
+    setPending(null);
     setSending(true);
     try {
-      const message = await chatApi.send(conversationId, body);
-      setText("");
+      const message = await chatApi.send(conversationId, {
+        body,
+        ...(draft.pending?.attachment && { attachment: draft.pending.attachment }),
+      });
       queryClient.setQueryData<ThreadPage>(queryKeys.chat.messages(conversationId), (t) =>
         t && !t.messages.some((m) => m._id === message._id) ? { ...t, messages: [...t.messages, message] } : t,
       );
     } catch (error) {
       toast.error(error instanceof ApiError ? error.message : "Message not sent");
+      // Put the draft back unless the user has already started a new one.
+      setText((current) => current || draft.text);
+      setPending((current) => current ?? draft.pending);
     } finally {
       setSending(false);
     }
@@ -255,7 +384,11 @@ function Thread({ conversationId, myId, onBack, summary }: { conversationId: str
 
       <div className="flex-1 overflow-y-auto px-4 py-4" aria-live="polite" aria-relevant="additions">
         {latest.isLoading ? (
-          <div className="space-y-3">{Array.from({ length: 5 }, (_, i) => <Skeleton key={i} className={cn("h-10 w-2/3", i % 2 && "ml-auto")} />)}</div>
+          <div className="space-y-3">
+            {Array.from({ length: 5 }, (_, i) => (
+              <Skeleton key={i} className={cn("h-10 w-2/3", i % 2 && "ml-auto")} />
+            ))}
+          </div>
         ) : latest.error ? (
           <ErrorState message={latest.error.message} onRetry={() => latest.refetch()} />
         ) : (
@@ -278,12 +411,20 @@ function Thread({ conversationId, myId, onBack, summary }: { conversationId: str
                   <div className={cn("flex", mine ? "justify-end" : "justify-start")}>
                     <div
                       className={cn(
-                        "max-w-[78%] rounded-2xl px-3.5 py-2 text-sm leading-relaxed break-words whitespace-pre-wrap",
+                        "max-w-[78%] rounded-2xl text-sm leading-relaxed break-words whitespace-pre-wrap",
+                        m.attachment?.kind === "image" ? "p-1" : "px-3.5 py-2",
                         mine ? "rounded-br-sm bg-primary text-primary-foreground" : "rounded-bl-sm border bg-muted text-foreground",
                       )}
                     >
-                      {m.body}
-                      <span className={cn("mt-0.5 block text-right text-[10px]", mine ? "text-primary-foreground/70" : "text-muted-foreground")}>
+                      {m.attachment && <MessageAttachment attachment={m.attachment} mine={mine} />}
+                      {m.body && <p className={cn(m.attachment && "mt-1.5", m.attachment?.kind === "image" && "px-2.5")}>{m.body}</p>}
+                      <span
+                        className={cn(
+                          "mt-0.5 block text-right text-[10px]",
+                          m.attachment?.kind === "image" && "px-2.5 pb-1",
+                          mine ? "text-primary-foreground/70" : "text-muted-foreground",
+                        )}
+                      >
                         {format(date, "HH:mm")}
                       </span>
                     </div>
@@ -297,31 +438,120 @@ function Thread({ conversationId, myId, onBack, summary }: { conversationId: str
       </div>
 
       <form
-        className="flex items-end gap-2 border-t p-3"
+        className="border-t p-3"
         onSubmit={(e) => {
           e.preventDefault();
           void send();
         }}
       >
-        <Textarea
-          aria-label="Message"
-          rows={1}
-          maxLength={2000}
-          disabled={!canSend}
-          placeholder={canSend ? "Write a message…  (Enter to send, Shift+Enter for a new line)" : "You can no longer message this person"}
-          value={text}
-          onChange={(e) => setText(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === "Enter" && !e.shiftKey && !e.nativeEvent.isComposing) {
-              e.preventDefault();
-              void send();
-            }
-          }}
-          className="max-h-36 min-h-10 resize-none"
-        />
-        <Button type="submit" size="icon-lg" className="size-10 shrink-0" disabled={!canSend || sending || !text.trim()} aria-label="Send message">
-          {sending ? <Loader2 className="animate-spin" /> : <Send />}
-        </Button>
+        {pending && (
+          <div className="mb-2 flex items-center gap-3 rounded-lg border bg-muted/50 p-2">
+            <span className="flex size-12 shrink-0 items-center justify-center overflow-hidden rounded-md bg-card">
+              {pending.attachment?.kind === "image" ? (
+                // eslint-disable-next-line @next/next/no-img-element -- Cloudinary thumbnail
+                <img
+                  src={cloudinaryImage(pending.attachment.url, {
+                    width: 96,
+                    height: 96,
+                  })}
+                  alt=""
+                  className="size-full object-cover"
+                />
+              ) : uploading ? (
+                <Loader2 className="size-5 animate-spin text-muted-foreground" aria-hidden />
+              ) : (
+                <FileText className="size-5 text-muted-foreground" aria-hidden />
+              )}
+            </span>
+            <div className="min-w-0 flex-1" aria-live="polite">
+              <p className="truncate text-sm font-medium">{pending.name}</p>
+              {uploading ? (
+                <div
+                  className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-border"
+                  role="progressbar"
+                  aria-label="Upload progress"
+                  aria-valuenow={pending.progress}
+                  aria-valuemin={0}
+                  aria-valuemax={100}
+                >
+                  <div className="h-full bg-link transition-[width] motion-reduce:transition-none" style={{ width: `${pending.progress}%` }} />
+                </div>
+              ) : (
+                <p className="text-xs text-muted-foreground">{pending.attachment && `${formatBytes(pending.attachment.size)} · ready to send`}</p>
+              )}
+            </div>
+            <Button type="button" variant="ghost" size="icon" onClick={clearPending} aria-label={`Remove ${pending.name}`}>
+              <X />
+            </Button>
+          </div>
+        )}
+        {(["image", "file"] as const).map((kind) => (
+          <input
+            key={kind}
+            ref={kind === "image" ? imageInput : fileInput}
+            type="file"
+            accept={acceptFor(kind)}
+            className="sr-only"
+            tabIndex={-1}
+            aria-hidden
+            onChange={(e) => {
+              const file = e.target.files?.[0];
+              e.target.value = "";
+              if (file) void attach(kind, file);
+            }}
+          />
+        ))}
+        <div className="flex items-end gap-1">
+          <EmojiPicker onPick={insertEmoji} disabled={!canSend} />
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon-lg"
+            className="size-10 shrink-0"
+            disabled={!canSend || uploading}
+            onClick={() => imageInput.current?.click()}
+            aria-label="Attach photo"
+          >
+            <ImagePlus />
+          </Button>
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon-lg"
+            className="size-10 shrink-0"
+            disabled={!canSend || uploading}
+            onClick={() => fileInput.current?.click()}
+            aria-label="Attach file"
+          >
+            <Paperclip />
+          </Button>
+          <Textarea
+            ref={textRef}
+            aria-label="Message"
+            rows={1}
+            maxLength={2000}
+            disabled={!canSend}
+            placeholder={canSend ? "Write a message…" : "You can no longer message this person"}
+            value={text}
+            onChange={(e) => setText(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && !e.shiftKey && !e.nativeEvent.isComposing) {
+                e.preventDefault();
+                void send();
+              }
+            }}
+            className="ml-1 max-h-36 min-h-10 resize-none"
+          />
+          <Button
+            type="submit"
+            size="icon-lg"
+            className="ml-1 size-10 shrink-0"
+            disabled={!canSend || sending || uploading || !ready}
+            aria-label="Send message"
+          >
+            {sending ? <Loader2 className="animate-spin" /> : <Send />}
+          </Button>
+        </div>
       </form>
     </>
   );

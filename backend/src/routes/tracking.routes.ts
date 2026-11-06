@@ -23,3 +23,4 @@ chatRouter.post("/conversations", tracking.openConversation);
 chatRouter.get("/conversations/:id/messages", tracking.messages);
 chatRouter.post("/conversations/:id/messages", tracking.sendMessage);
 chatRouter.post("/conversations/:id/read", tracking.markRead);
+chatRouter.post("/conversations/:id/attachments/signature", tracking.attachmentSignature);

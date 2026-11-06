@@ -122,7 +122,13 @@ export const chatApi = {
       `/chat/conversations/${id}/messages`,
       { before, limit: 40 },
     ),
-  send: (id: string, body: string) => api.post<import("@/types/tracking").ChatMessage>(`/chat/conversations/${id}/messages`, { body }),
+  send: (id: string, message: { body: string; attachment?: import("@/types/tracking").ChatAttachment }) =>
+    api.post<import("@/types/tracking").ChatMessage>(`/chat/conversations/${id}/messages`, message),
+  attachmentSignature: (id: string, kind: import("@/types/tracking").AttachmentKind) =>
+    api.post<{ signature: string; timestamp: number; folder: string; allowed_formats?: string; apiKey: string; uploadUrl: string }>(
+      `/chat/conversations/${id}/attachments/signature`,
+      { kind },
+    ),
   read: (id: string) => api.post<null>(`/chat/conversations/${id}/read`),
 };
 

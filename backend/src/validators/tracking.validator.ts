@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { ATTACHMENT_KINDS, ATTACHMENT_MAX_BYTES } from "../constants/chat.js";
 import { LOCATION_TYPES } from "../models/Location.js";
 import { PRESENCE_STATUSES } from "../models/Presence.js";
 import { objectIdSchema } from "./common.js";
@@ -30,7 +31,21 @@ export const historyQuerySchema = z.object({ days: z.coerce.number().int().min(1
 export const userIdParamsSchema = z.object({ userId: objectIdSchema });
 
 export const openConversationSchema = z.object({ userId: objectIdSchema });
-export const sendMessageSchema = z.object({ body: z.string().trim().min(1, "Message is empty").max(2000) });
+export const attachmentSchema = z.object({
+  kind: z.enum(ATTACHMENT_KINDS),
+  url: z.url().max(500),
+  name: z.string().trim().min(1).max(200),
+  size: z.number().int().positive().max(ATTACHMENT_MAX_BYTES, "Attachments must be 10 MB or smaller"),
+  width: z.number().int().positive().max(20000).optional(),
+  height: z.number().int().positive().max(20000).optional(),
+});
+export type AttachmentInput = z.infer<typeof attachmentSchema>;
+
+export const sendMessageSchema = z
+  .object({ body: z.string().trim().max(2000).default(""), attachment: attachmentSchema.optional() })
+  .refine((m) => m.body.length > 0 || m.attachment, { message: "Message is empty", path: ["body"] });
+
+export const attachmentSignatureSchema = z.object({ kind: z.enum(ATTACHMENT_KINDS) });
 export const messagesQuerySchema = z.object({
   before: z.string().datetime().optional(),
   limit: z.coerce.number().int().min(1).max(100).default(30),

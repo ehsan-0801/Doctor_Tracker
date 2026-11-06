@@ -59,12 +59,35 @@ export interface ConversationSummary {
   canSend: boolean;
 }
 
+export type AttachmentKind = "image" | "file";
+
+export interface ChatAttachment {
+  kind: AttachmentKind;
+  url: string;
+  name: string;
+  size: number;
+  width?: number;
+  height?: number;
+}
+
 export interface ChatMessage {
   _id: string;
   senderId: string;
   body: string;
+  attachment: ChatAttachment | null;
   createdAt: string;
 }
+
+/** Mirrors the API's attachment rules (backend/src/constants/chat.ts); the server re-checks every upload. */
+export const ATTACHMENT_FORMATS: Record<AttachmentKind, readonly string[]> = {
+  image: ["jpg", "jpeg", "png", "webp", "gif"],
+  file: ["pdf", "doc", "docx", "xls", "xlsx", "ppt", "pptx", "txt", "csv", "zip"],
+};
+export const ATTACHMENT_MAX_BYTES = 10 * 1024 * 1024;
+
+/** Same preview text the API stores for conversation lists. */
+export const messagePreview = (m: Pick<ChatMessage, "body" | "attachment">) =>
+  (m.body || (m.attachment ? (m.attachment.kind === "image" ? "📷 Photo" : `📎 ${m.attachment.name}`) : "")).slice(0, 140);
 
 export const STATUS_LABELS: Record<PresenceStatus, string> = {
   available: "Available",

@@ -13,6 +13,7 @@ import {
   messagesQuerySchema,
   openConversationSchema,
   sendMessageSchema,
+  attachmentSignatureSchema,
   setPresenceSchema,
   updateLocationSchema,
   userIdParamsSchema,
@@ -86,8 +87,13 @@ export async function messages(req: Request, res: Response) {
 }
 export async function sendMessage(req: Request, res: Response) {
   const { id } = idParamsSchema.parse(req.params);
-  const { body } = sendMessageSchema.parse(req.body);
-  sendSuccess(res, "Message sent", await chatService.sendMessage(currentUser(res), id, body), { status: 201 });
+  const { body, attachment } = sendMessageSchema.parse(req.body);
+  sendSuccess(res, "Message sent", await chatService.sendMessage(currentUser(res), id, body, attachment), { status: 201 });
+}
+export async function attachmentSignature(req: Request, res: Response) {
+  const { id } = idParamsSchema.parse(req.params);
+  const { kind } = attachmentSignatureSchema.parse(req.body);
+  sendSuccess(res, "Upload signature created", await chatService.attachmentSignature(currentUser(res), id, kind));
 }
 export async function markRead(req: Request, res: Response) {
   const { id } = idParamsSchema.parse(req.params);

@@ -10,7 +10,7 @@
 
 - **Public website** – homepage with a video hero, live network statistics (refreshed every 30 s from the database), services, featured doctors, about and contact sections, plus a searchable **Find a doctor** directory and public doctor profiles. All content is editable by administrators in **Site settings**; only public doctor fields (name, specialization, hospital) are exposed.
 - **Live tracking** – real-time 3D hospital map (React Three Fiber) showing where doctors and staff are (operating theatre, ICU, wards, consultation rooms…) with status (available, busy, in surgery, on break, off duty). People check themselves in; assigned staff can update their doctors; admins see everyone and a 30-day movement history, other roles see doctors only. Admins manage floors and rooms on the **Locations** page.
-- **Real-time chat** – one-to-one messages between each doctor and their assigned staff; admins can message anyone. Unread counts, online status and instant delivery over WebSockets (Socket.IO).
+- **Real-time chat** – one-to-one messages between each doctor and their assigned staff; admins can message anyone. Unread counts, online status and instant delivery over WebSockets (Socket.IO). Messages can include emoji (built-in picker), photos (JPG, PNG, WebP, GIF) and documents (PDF, Word, Excel, PowerPoint, TXT, CSV, ZIP) up to 10 MB, uploaded straight to Cloudinary.
 - **Real-time notifications** – every portal has a notification bell with an unread badge, plus a toast as events happen: new messages, patients assigned to or removed from a doctor, a status or location changed on your behalf, and doctors newly assigned to a staff member. Notifications are kept for 90 days.
 - **Audit log** (admins) – every sign-in (including failed attempts), sign-out and change to doctors, patients, users, rooms, site settings and on-behalf status updates is recorded with who, when, what changed, IP address and browser. Search and filter by action, area and date; new entries appear live. Passwords, tokens and secrets are never stored, and entries expire after 180 days.
 - **Roles** – Administrator, Management, Front desk (staff) and Doctor, enforced by capability permissions on every API route; menus and actions adapt to the signed-in role. Administrators manage accounts on the **Users** page.
@@ -163,7 +163,7 @@ npm run dev                 # http://localhost:4000
 | `ADMIN_EMAIL` | Administrator email created by `npm run seed` |
 | `ADMIN_PASSWORD` | Administrator password (at least 8 characters), used only by the seed |
 | `REALTIME_SECRET` | Optional (recommended in production). Signs 2-minute WebSocket tokens for live tracking and chat. |
-| `CLOUDINARY_URL` | Optional. `cloudinary://<api_key>:<api_secret>@<cloud_name>` enables doctor photo uploads. The API signs each upload (folders `DocTrack/doctors`, `DocTrack/staff`, `DocTrack/site`; JPG/PNG/WebP only). Run `npm run cloudinary:setup` to verify the credentials and create the folders.; the secret never reaches the browser. |
+| `CLOUDINARY_URL` | Optional. `cloudinary://<api_key>:<api_secret>@<cloud_name>` enables doctor photo uploads and chat attachments. The API signs each upload (folders `DocTrack/doctors`, `DocTrack/staff`, `DocTrack/site`; JPG/PNG/WebP only). Chat files go to `DocTrack/chat/<conversationId>`; only participants get a signature, and the API accepts an attachment only if its URL is in that conversation's folder on this cloud with an allowed format. Run `npm run cloudinary:setup` to verify the credentials and create the folders.; the secret never reaches the browser. |
 
 Seed options:
 
@@ -245,6 +245,8 @@ Errors use `{ "success": false, "message": "...", "errors": [{ "field": "email",
 | GET | `/api/dashboard/patients-per-doctor` | Top doctors by patient count (`limit`) |
 | GET | `/api/dashboard/registrations` | Patients created per month (`months` ≤36) |
 | GET | `/api/dashboard/conditions` | Patients per condition, top N plus "Other" (`limit`) |
+| POST | `/api/chat/conversations/:id/messages` | Send a message (`body` and/or `attachment` `{ kind: image\|file, url, name, size, width?, height? }`) |
+| POST | `/api/chat/conversations/:id/attachments/signature` | Signed Cloudinary upload for a photo or document (`kind`), participants only |
 | GET | `/api/audit` | Audit entries, newest first (admin). Query: `page`, `limit` (≤100), `search`, `action`, `entityType`, `actorId`, `startDate`, `endDate` |
 | GET | `/api/audit/facets` | Recorded actions and areas for the filters (admin) |
 | GET | `/api/notifications` | The signed-in user's notifications with unread count (`limit`, `before`) |
@@ -262,7 +264,7 @@ cd backend
 npm test
 ```
 
-91 integration tests run against an **in-memory MongoDB** (`mongodb-memory-server`), so they need no Atlas access and never touch real data. They cover authentication (validation, generic errors, httpOnly cookie, hashed session tokens, logout revocation, expired sessions), doctors (create, duplicates, search with regex escaping, filters, date ranges, sorting, pagination, patient counts, invalid ids), patients (doctor association, unassign without delete, condition canonicalization, filters, reassignment, invalid references, delete, NoSQL-operator injection) dashboard aggregations, the audit log (recorded actions, secret redaction, admin-only access, filters) and notifications (per-user scoping, read state).
+92 integration tests run against an **in-memory MongoDB** (`mongodb-memory-server`), so they need no Atlas access and never touch real data. They cover authentication (validation, generic errors, httpOnly cookie, hashed session tokens, logout revocation, expired sessions), doctors (create, duplicates, search with regex escaping, filters, date ranges, sorting, pagination, patient counts, invalid ids), patients (doctor association, unassign without delete, condition canonicalization, filters, reassignment, invalid references, delete, NoSQL-operator injection) dashboard aggregations, the audit log (recorded actions, secret redaction, admin-only access, filters) and notifications (per-user scoping, read state).
 
 ### End-to-end (Playwright)
 
@@ -272,7 +274,7 @@ npx playwright install chromium        # once (or set PLAYWRIGHT_CHANNEL=chrome 
 E2E_MONGODB_URI="mongodb+srv://…/doctor_tracker_e2e?retryWrites=true&w=majority" npm run test:e2e
 ```
 
-15 browser tests (desktop 1440×900 and mobile 375×812) start the real API (port 4100) and a production build of the frontend (port 3100). The run **resets and seeds** the database in `E2E_MONGODB_URI`, so it refuses any database whose name does not contain `e2e` or `test`. Covered flows: login redirects and errors, password visibility, sign-out, dashboard totals and period selector, doctor search/sort/filter/pagination, add doctor with duplicate handling, doctor details with breadcrumbs, the full patient lifecycle (add with a custom condition, remove from doctor, reassign, edit, delete), URL-driven filters, mobile card lists, collapsible filters, the navigation drawer, the audit log and a live notification delivered to a second signed-in doctor.
+16 browser tests (desktop 1440×900 and mobile 375×812) start the real API (port 4100) and a production build of the frontend (port 3100). The run **resets and seeds** the database in `E2E_MONGODB_URI`, so it refuses any database whose name does not contain `e2e` or `test`. Covered flows: login redirects and errors, password visibility, sign-out, dashboard totals and period selector, doctor search/sort/filter/pagination, add doctor with duplicate handling, doctor details with breadcrumbs, the full patient lifecycle (add with a custom condition, remove from doctor, reassign, edit, delete), URL-driven filters, mobile card lists, collapsible filters, the navigation drawer, the audit log, a live notification delivered to a second signed-in doctor, and sending an emoji, a photo and a document in chat (Cloudinary is stubbed in the browser, so no files are uploaded).
 
 ## Screenshots
 

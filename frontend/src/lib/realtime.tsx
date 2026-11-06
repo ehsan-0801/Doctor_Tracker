@@ -8,7 +8,7 @@ import { toast } from "sonner";
 import { trackingApi } from "@/lib/api/endpoints";
 import { queryKeys } from "@/lib/api/query-keys";
 import type { AppNotification } from "@/types/audit";
-import type { ChatMessage, ConversationSummary, PresenceView } from "@/types/tracking";
+import { messagePreview, type ChatMessage, type ConversationSummary, type PresenceView } from "@/types/tracking";
 
 /**
  * WebSocket endpoint of the Express API. The browser connects directly (the
@@ -75,7 +75,7 @@ export function RealtimeProvider({ children }: { children: React.ReactNode }) {
       queryClient.setQueryData<ConversationSummary[]>(queryKeys.chat.conversations, (list) => {
         const i = list?.findIndex((c) => c._id === conversationId) ?? -1;
         if (!list || i === -1) return list;
-        const updated = { ...list[i]!, lastMessage: message.body.slice(0, 140), lastMessageAt: message.createdAt, lastSenderId: message.senderId };
+        const updated = { ...list[i]!, lastMessage: messagePreview(message), lastMessageAt: message.createdAt, lastSenderId: message.senderId };
         return [updated, ...list.slice(0, i), ...list.slice(i + 1)];
       });
       void queryClient.invalidateQueries({ queryKey: queryKeys.chat.conversations });

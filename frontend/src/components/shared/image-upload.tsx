@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { ApiError } from "@/lib/api/client";
 import { uploadsApi } from "@/lib/api/endpoints";
 import { cloudinaryImage } from "@/lib/cloudinary";
+import { uploadToCloudinary } from "@/lib/cloudinary-upload";
 
 const MAX_BYTES = 5 * 1024 * 1024;
 const ACCEPT = "image/jpeg,image/png,image/webp";
@@ -39,28 +40,13 @@ export function ImageUpload({
     try {
       setProgress(0);
       const sig = await uploadsApi.signature(purpose);
-      const form = new FormData();
-      form.append("file", file);
-      form.append("api_key", sig.apiKey);
-      form.append("timestamp", String(sig.timestamp));
-      form.append("signature", sig.signature);
-      form.append("folder", sig.folder);
-      form.append("allowed_formats", sig.allowed_formats);
-
-      // XHR (not fetch) for upload progress.
-      const url = await new Promise<string>((resolve, reject) => {
-        const xhr = new XMLHttpRequest();
-        xhr.open("POST", sig.uploadUrl);
-        xhr.upload.onprogress = (e) => e.lengthComputable && setProgress(Math.round((e.loaded / e.total) * 100));
-        xhr.onload = () => {
-          const body = JSON.parse(xhr.responseText || "{}") as { secure_url?: string; error?: { message?: string } };
-          if (xhr.status >= 200 && xhr.status < 300 && body.secure_url) resolve(body.secure_url);
-          else reject(new Error(body.error?.message ?? "Upload failed"));
-        };
-        xhr.onerror = () => reject(new Error("Network error during upload"));
-        xhr.send(form);
-      });
-      onChange(url);
+      const { secure_url } = await uploadToCloudinary(
+        sig.uploadUrl,
+        file,
+        { api_key: sig.apiKey, timestamp: sig.timestamp, signature: sig.signature, folder: sig.folder, allowed_formats: sig.allowed_formats },
+        setProgress,
+      );
+      onChange(secure_url);
     } catch (e) {
       setError(e instanceof ApiError || e instanceof Error ? e.message : "Upload failed");
     } finally {

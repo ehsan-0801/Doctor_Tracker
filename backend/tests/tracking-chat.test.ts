@@ -134,6 +134,43 @@ describe("chat", () => {
     await User.updateOne({ _id: ids.desk }, { assignedDoctorIds: [] });
     expect((await doc.post(`/api/chat/conversations/${conv._id}/messages`).send({ body: "hello?" })).status).toBe(403);
   });
+
+  it("signs attachment uploads for participants and accepts only files from the conversation's folder", async () => {
+    const { doc, desk, other, ids } = await scenario();
+    const conv = (await doc.post("/api/chat/conversations").send({ userId: ids.desk })).body.data;
+    const send = (attachment: Record<string, unknown>, body = "") =>
+      doc.post(`/api/chat/conversations/${conv._id}/messages`).send({ body, attachment });
+
+    const image = (await doc.post(`/api/chat/conversations/${conv._id}/attachments/signature`).send({ kind: "image" })).body.data;
+    expect(image).toMatchObject({ folder: `DocTrack/chat/${conv._id}`, uploadUrl: "https://api.cloudinary.com/v1_1/test-cloud/image/upload" });
+    expect(image.signature).toMatch(/^[a-f0-9]{40}$/);
+    const raw = (await desk.post(`/api/chat/conversations/${conv._id}/attachments/signature`).send({ kind: "file" })).body.data;
+    expect(raw.uploadUrl).toBe("https://api.cloudinary.com/v1_1/test-cloud/raw/upload");
+    expect((await other.post(`/api/chat/conversations/${conv._id}/attachments/signature`).send({ kind: "image" })).status).toBe(404);
+    expect((await doc.post(`/api/chat/conversations/${conv._id}/attachments/signature`).send({ kind: "video" })).status).toBe(400);
+
+    const base = `https://res.cloudinary.com/test-cloud`;
+    const photo = { kind: "image", url: `${base}/image/upload/v1700000000/DocTrack/chat/${conv._id}/abc123.jpg`, name: "x-ray.jpg", size: 2048, width: 800, height: 600 };
+    const pdf = { kind: "file", url: `${base}/raw/upload/v1700000000/DocTrack/chat/${conv._id}/report_x1.pdf`, name: "Lab report.pdf", size: 4096 };
+    const sent = await send(photo);
+    expect(sent.status).toBe(201);
+    expect(sent.body.data.attachment).toMatchObject({ kind: "image", name: "x-ray.jpg" });
+    expect((await send(pdf, "Results attached")).status).toBe(201);
+
+    // Foreign cloud, another conversation's folder, wrong resource type, blocked format, oversize.
+    expect((await send({ ...photo, url: photo.url.replace("test-cloud", "evil-cloud") })).status).toBe(400);
+    expect((await send({ ...photo, url: photo.url.replace(conv._id, "64b000000000000000000000") })).status).toBe(400);
+    expect((await send({ ...pdf, kind: "image" })).status).toBe(400);
+    expect((await send({ ...pdf, url: pdf.url.replace(".pdf", ".exe") })).status).toBe(400);
+    expect((await send({ ...photo, size: 11 * 1024 * 1024 })).status).toBe(400);
+
+    const list = (await desk.get("/api/chat/conversations")).body.data;
+    expect(list[0].lastMessage).toBe("Results attached");
+    const thread = (await desk.get(`/api/chat/conversations/${conv._id}/messages`)).body.data.messages;
+    expect(thread.map((m: { attachment: { name: string } | null }) => m.attachment?.name)).toEqual(["x-ray.jpg", "Lab report.pdf"]);
+    await send(photo);
+    expect((await desk.get("/api/chat/conversations")).body.data[0].lastMessage).toBe("📷 Photo");
+  });
 });
 
 describe("real-time delivery (WebSocket)", () => {
