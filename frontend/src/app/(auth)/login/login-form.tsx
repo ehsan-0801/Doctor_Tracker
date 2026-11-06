@@ -58,8 +58,9 @@ export function LoginForm() {
     }
   });
 
+  // method="post" keeps credentials out of the URL even if JavaScript has not loaded yet.
   return (
-    <form onSubmit={onSubmit} noValidate className="space-y-5">
+    <form method="post" onSubmit={onSubmit} noValidate className="space-y-5">
       {formError && (
         <div role="alert" className="rounded-lg border border-destructive/30 bg-destructive/5 px-3 py-2.5 text-sm text-destructive">
           {formError}

@@ -6,6 +6,9 @@ const apiUrl = process.env.API_URL ?? "http://localhost:4000";
 
 const nextConfig: NextConfig = {
   devIndicators: false,
+  // Let phones/tablets on the local network load dev assets (e.g. http://192.168.1.3:3000).
+  // Development only; production builds ignore this.
+  allowedDevOrigins: ["192.168.*.*", "10.*.*.*"],
   cacheComponents: true,
   partialPrefetching: true,
   turbopack: {
