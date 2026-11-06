@@ -25,6 +25,19 @@ test.describe("authentication", () => {
     expect(page.url()).not.toContain("password");
   });
 
+  test("links the portal and the public website both ways", async ({ page }) => {
+    await page.goto("/");
+    const header = page.getByRole("banner");
+    await expect(header.getByRole("link", { name: "Staff sign in" })).toBeVisible();
+
+    await signIn(page);
+    await page.getByRole("link", { name: "Visit website" }).click();
+    await expect(page).toHaveURL(/\/$/);
+    await expect(header.getByRole("link", { name: "Staff sign in" })).toHaveCount(0);
+    await header.getByRole("link", { name: "Dashboard" }).click();
+    await expect(page).toHaveURL(/\/dashboard$/);
+  });
+
   test("toggles password visibility", async ({ page }) => {
     await page.goto("/login");
     const password = page.getByLabel("Password", { exact: true });

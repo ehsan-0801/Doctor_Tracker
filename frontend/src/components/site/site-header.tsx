@@ -1,11 +1,15 @@
 "use client";
 
+import { useQuery } from "@tanstack/react-query";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { Menu, Phone, X } from "lucide-react";
 import { Brand } from "@/components/layout/brand";
 import { Button } from "@/components/ui/button";
+import { authApi } from "@/lib/api/endpoints";
+import { queryKeys } from "@/lib/api/query-keys";
+import { homeFor } from "@/lib/permissions";
 import { cn } from "@/lib/utils";
 import { useLanguage } from "./language-provider";
 import { LanguageToggle } from "./language-toggle";
@@ -80,6 +84,11 @@ export function SiteHeader({ emergencyPhone }: { emergencyPhone: string }) {
     return () => window.removeEventListener("resize", place);
   }, [activeKey, lang]);
 
+  // Signed-in visitors get a way back to their portal instead of "Staff sign in".
+  const session = useQuery({ queryKey: [...queryKeys.session, "quiet"], queryFn: authApi.session, retry: false, staleTime: 5 * 60_000 });
+  const user = session.data?.user;
+  const portal = user ? { href: homeFor(user.role), label: t.dashboard } : { href: "/login", label: t.staffSignIn };
+
   const tel = emergencyPhone.replace(/[^\d+]/g, "");
 
   return (
@@ -135,7 +144,7 @@ export function SiteHeader({ emergencyPhone }: { emergencyPhone: string }) {
             </a>
           )}
           <Button asChild variant="outline" size="lg" className="h-10 rounded-md border-slate-deep px-4 text-slate-deep hover:bg-slate-deep hover:text-white">
-            <Link href="/login">{t.staffSignIn}</Link>
+            <Link href={portal.href}>{portal.label}</Link>
           </Button>
         </div>
 
@@ -186,7 +195,7 @@ export function SiteHeader({ emergencyPhone }: { emergencyPhone: string }) {
               </Button>
             )}
             <Button asChild size="lg" className="h-11 rounded-md bg-slate-deep text-white hover:bg-slate-deep/90">
-              <Link href="/login">{t.staffSignIn}</Link>
+              <Link href={portal.href}>{portal.label}</Link>
             </Button>
           </div>
         </nav>

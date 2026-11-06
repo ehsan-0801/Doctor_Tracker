@@ -1,7 +1,9 @@
 "use client";
 
+import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { ChevronDown, LogOut } from "lucide-react";
+import { ChevronDown, Globe, LogOut } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -36,6 +38,12 @@ export function AppHeader() {
       <p className="hidden text-sm font-medium text-muted-foreground md:block">{section?.title ?? "DocTrack"}</p>
 
       <div className="ml-auto flex items-center gap-1">
+        <Button asChild variant="ghost" className="h-10 px-2.5 text-muted-foreground hover:text-foreground">
+          <Link href="/" aria-label="Visit website">
+            <Globe aria-hidden />
+            <span className="hidden lg:inline">Visit website</span>
+          </Link>
+        </Button>
         <MyStatusButton />
         <NotificationBell />
         <ThemeToggle />

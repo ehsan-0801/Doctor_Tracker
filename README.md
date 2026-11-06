@@ -416,8 +416,8 @@ npx playwright install chromium        # once (or set PLAYWRIGHT_CHANNEL=chrome 
 E2E_MONGODB_URI="mongodb+srv://…/doctor_tracker_e2e?retryWrites=true&w=majority" npm run test:e2e
 ```
 
-19 browser tests (desktop 1440×900 and mobile 375×812) start the real API (port 4100) and a production build of the frontend (port 3100). The run **resets and seeds** the database in `E2E_MONGODB_URI`, so it refuses any database whose name does not contain `e2e` or `test`. Covered flows:
-- **Sign-in:** redirects and errors, password visibility, sign-out.
+20 browser tests (desktop 1440×900 and mobile 375×812) start the real API (port 4100) and a production build of the frontend (port 3100). The run **resets and seeds** the database in `E2E_MONGODB_URI`, so it refuses any database whose name does not contain `e2e` or `test`. Covered flows:
+- **Sign-in:** redirects and errors, password visibility, sign-out, links between the portal and the public website.
 - **Dashboard:** totals and period selector.
 - **Doctors:** search, sort, filter, pagination, add with duplicate handling, details with breadcrumbs.
 - **Patients:** the full lifecycle (add, remove from doctor, reassign, edit, delete) and URL-driven filters.
