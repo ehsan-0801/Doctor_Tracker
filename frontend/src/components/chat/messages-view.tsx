@@ -107,6 +107,21 @@ export function MessagesView() {
   );
 }
 
+/** Small unread counter (decorative: callers put the number in their accessible label). */
+export function CountBadge({ count, className }: { count: number; className?: string }) {
+  return (
+    <span
+      aria-hidden
+      className={cn(
+        "flex h-5 min-w-5 items-center justify-center rounded-full bg-slate-deep px-1.5 text-[11px] leading-none font-semibold text-white tabular-nums ring-2 ring-card",
+        className,
+      )}
+    >
+      {count > 99 ? "99+" : count}
+    </span>
+  );
+}
+
 /** Conversations with previews and unread counts (shared by the Messages page and the chat widget). */
 export function ConversationList({ activeId, onOpen }: { activeId: string | null; onOpen: (id: string) => void }) {
   const { user } = useSession();
@@ -227,6 +242,7 @@ export function Thread({
   summary,
   compact = false,
   actions,
+  backCount = 0,
 }: {
   conversationId: string;
   myId: string;
@@ -235,6 +251,8 @@ export function Thread({
   /** Widget layout: back button always visible. */
   compact?: boolean;
   actions?: React.ReactNode;
+  /** Unread messages in other conversations, shown on the back button. */
+  backCount?: number;
 }) {
   const queryClient = useQueryClient();
   const [text, setText] = useState("");
@@ -390,8 +408,15 @@ export function Thread({
   return (
     <>
       <header className="flex items-center gap-3 border-b px-4 py-3">
-        <Button variant="ghost" size="icon" className={cn(!compact && "md:hidden")} onClick={onBack} aria-label="Back to conversations">
+        <Button
+          variant="ghost"
+          size="icon"
+          className={cn("relative", !compact && "md:hidden")}
+          onClick={onBack}
+          aria-label={backCount ? `Back to conversations, ${backCount} unread` : "Back to conversations"}
+        >
           <ArrowLeft />
+          {backCount > 0 && <CountBadge count={backCount} className="absolute -top-1.5 -right-3" />}
         </Button>
         {contact ? (
           <>

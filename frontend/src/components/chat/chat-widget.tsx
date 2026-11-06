@@ -15,7 +15,7 @@ import { queryKeys } from "@/lib/api/query-keys";
 import { chatWidget, useChatWidget } from "@/lib/chat-widget";
 import { cn } from "@/lib/utils";
 import type { ChatContact } from "@/types/tracking";
-import { ConversationList, NewChatButton, Thread } from "./messages-view";
+import { ConversationList, CountBadge, NewChatButton, Thread } from "./messages-view";
 
 /**
  * Floating chat available on every portal page (except the full Messages page):
@@ -94,11 +94,19 @@ export function ChatWidget() {
               onBack={() => chatWidget.showList()}
               summary={conversations.data?.find((c) => c._id === conversationId)}
               actions={panelActions}
+              backCount={(conversations.data ?? []).reduce((sum, c) => (c._id === conversationId ? sum : sum + c.unread), 0)}
             />
           ) : (
             <>
               <header className="flex items-center gap-1 border-b py-2 pr-2 pl-4">
-                <h2 className="flex-1 font-semibold">Messages</h2>
+                <h2 className="flex flex-1 items-center gap-2 font-semibold">
+                  Messages
+                  {unread > 0 && (
+                    <span className="rounded-full bg-accent px-2 py-0.5 text-xs font-semibold text-accent-foreground tabular-nums" aria-live="polite">
+                      {unread > 99 ? "99+" : unread} new
+                    </span>
+                  )}
+                </h2>
                 <NewChatButton onPick={startWith} compact />
                 {panelActions}
               </header>
@@ -115,18 +123,14 @@ export function ChatWidget() {
         type="button"
         onClick={() => chatWidget.toggle()}
         aria-expanded={open}
-        aria-label={open ? "Close chat" : unread ? `Open chat, ${unread} unread` : "Open chat"}
+        aria-label={`${open ? "Close chat" : "Open chat"}${unread ? `, ${unread} unread` : ""}`}
         className={cn(
           "fixed right-4 bottom-4 z-40 flex size-14 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg transition-transform hover:scale-105 focus-visible:ring-4 focus-visible:ring-ring/50 focus-visible:outline-none motion-reduce:transition-none",
           open && "max-sm:hidden",
         )}
       >
         {open ? <X className="size-6" aria-hidden /> : <MessageCircle className="size-6" aria-hidden />}
-        {!open && unread > 0 && (
-          <span className="absolute -top-1 -right-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-slate-deep px-1.5 text-[11px] font-semibold text-white ring-2 ring-background">
-            {unread > 99 ? "99+" : unread}
-          </span>
-        )}
+        {unread > 0 && <CountBadge count={unread} className="absolute -top-1 -right-1 ring-background" />}
       </button>
     </>
   );
