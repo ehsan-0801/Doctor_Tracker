@@ -12,7 +12,7 @@ export const metadata: Metadata = {
   description: "DocTrack connects patients with the right specialists and keeps hospital care teams in sync.",
 };
 
-export const viewport: Viewport = { themeColor: "#047857" };
+export const viewport: Viewport = { themeColor: "#253c48" };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (

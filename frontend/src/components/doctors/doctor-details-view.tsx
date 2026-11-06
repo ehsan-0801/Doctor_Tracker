@@ -14,7 +14,6 @@ import { ApiError } from "@/lib/api/client";
 import { doctorsApi } from "@/lib/api/endpoints";
 import { queryKeys } from "@/lib/api/query-keys";
 import { formatDate, formatNumber } from "@/lib/format";
-import { cloudinaryImage } from "@/lib/cloudinary";
 import { DoctorAvatar } from "./doctor-avatar";
 import { DoctorFormDialog } from "./doctor-form-dialog";
 
@@ -76,12 +75,7 @@ export function DoctorDetailsView({ id }: { id: string }) {
           <>
             <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
               <div className="flex min-w-0 items-center gap-4">
-                {d.photoUrl ? (
-                  // eslint-disable-next-line @next/next/no-img-element -- CDN thumbnail
-                  <img src={cloudinaryImage(d.photoUrl, { width: 112, height: 112 })} alt="" className="size-14 rounded-full object-cover" />
-                ) : (
-                  <DoctorAvatar name={d.name} className="size-14 text-base" />
-                )}
+                <DoctorAvatar name={d.name} photoUrl={d.photoUrl} className="size-14 text-base" />
                 <div className="min-w-0">
                   <h1 className="truncate text-2xl font-semibold">{d.name}</h1>
                   <p className="text-sm text-muted-foreground">
@@ -106,10 +100,10 @@ export function DoctorDetailsView({ id }: { id: string }) {
             <dl className="mt-6 grid gap-4 border-t pt-5 sm:grid-cols-2 xl:grid-cols-4">
               <Detail icon={Building2} label="Hospital">{d.hospital}</Detail>
               <Detail icon={Mail} label="Email">
-                <a href={`mailto:${d.email}`} className="hover:text-primary hover:underline">{d.email}</a>
+                <a href={`mailto:${d.email}`} className="hover:text-link hover:underline">{d.email}</a>
               </Detail>
               <Detail icon={Phone} label="Phone">
-                <a href={`tel:${d.phone.replace(/[^\d+]/g, "")}`} className="hover:text-primary hover:underline">{d.phone}</a>
+                <a href={`tel:${d.phone.replace(/[^\d+]/g, "")}`} className="hover:text-link hover:underline">{d.phone}</a>
               </Detail>
               <Detail icon={CalendarDays} label="Created">{formatDate(d.createdAt)}</Detail>
             </dl>

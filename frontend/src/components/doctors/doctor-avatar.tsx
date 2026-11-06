@@ -1,13 +1,7 @@
-import { initials } from "@/lib/format";
+import { UserAvatar } from "@/components/shared/user-avatar";
 import { cn } from "@/lib/utils";
 
-export function DoctorAvatar({ name, className }: { name: string; className?: string }) {
-  return (
-    <span
-      aria-hidden
-      className={cn("flex size-9 shrink-0 items-center justify-center rounded-full bg-accent text-xs font-semibold text-accent-foreground", className)}
-    >
-      {initials(name)}
-    </span>
-  );
+/** Doctor photo (Cloudinary-resized) when available, otherwise initials. */
+export function DoctorAvatar({ name, photoUrl, className }: { name: string; photoUrl?: string; className?: string }) {
+  return <UserAvatar name={name} photoUrl={photoUrl} className={cn("size-9", className)} />;
 }

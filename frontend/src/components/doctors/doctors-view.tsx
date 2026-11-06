@@ -84,8 +84,8 @@ export function DoctorsView() {
       sortKey: "name",
       cell: (d) => (
         <Link href={`/doctors/${d._id}`} className="group flex items-center gap-3">
-          <DoctorAvatar name={d.name} />
-          <span className="max-w-[200px] truncate font-medium text-foreground group-hover:text-primary group-hover:underline" title={d.name}>
+          <DoctorAvatar name={d.name} photoUrl={d.photoUrl} />
+          <span className="max-w-[200px] truncate font-medium text-foreground group-hover:text-link group-hover:underline" title={d.name}>
             {d.name}
           </span>
         </Link>
@@ -102,7 +102,7 @@ export function DoctorsView() {
       id: "email",
       header: "Email",
       cell: (d) => (
-        <a href={`mailto:${d.email}`} className="block max-w-[200px] truncate text-muted-foreground hover:text-primary" title={d.email}>
+        <a href={`mailto:${d.email}`} className="block max-w-[200px] truncate text-muted-foreground hover:text-link" title={d.email}>
           {d.email}
         </a>
       ),
@@ -185,7 +185,7 @@ export function DoctorsView() {
           onSortChange={(next) => setFilters({ sortBy: next.sortBy, sortOrder: next.sortOrder, page: 1 })}
           renderMobileCard={(d) => (
             <div className="flex items-start gap-3">
-              <DoctorAvatar name={d.name} />
+              <DoctorAvatar name={d.name} photoUrl={d.photoUrl} />
               <Link href={`/doctors/${d._id}`} className="min-w-0 flex-1 space-y-1">
                 <p className="truncate font-medium">{d.name}</p>
                 <p className="truncate text-sm text-muted-foreground">

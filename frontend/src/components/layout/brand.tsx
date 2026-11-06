@@ -2,8 +2,8 @@ import { cn } from "@/lib/utils";
 
 /**
  * DocTrack mark: a "D" whose bowl carries a heartbeat line that ends in a
- * tracking dot — a doctor, a pulse, and live tracking in one shape. It takes
- * the current area's primary colour.
+ * tracking dot — a doctor, a pulse, and live tracking in one shape
+ * (slate tile, coral dot; inverted on dark surfaces).
  */
 export function LogoMark({ className }: { className?: string }) {
   return (

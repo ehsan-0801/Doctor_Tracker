@@ -28,7 +28,7 @@ export function RecentPatients() {
           </h2>
           <p className="text-xs text-muted-foreground">Latest patient registrations</p>
         </div>
-        <Link href="/patients" className="inline-flex shrink-0 items-center gap-1 text-sm font-medium text-primary hover:underline">
+        <Link href="/patients" className="inline-flex shrink-0 items-center gap-1 text-sm font-medium text-link hover:underline">
           View all <ArrowRight className="size-3.5" aria-hidden />
         </Link>
       </header>

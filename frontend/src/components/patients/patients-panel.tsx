@@ -122,7 +122,7 @@ export function PatientsPanel({ doctor }: { doctor?: DoctorSummary }) {
 
   const doctorCell = (p: Patient) =>
     p.doctor ? (
-      <Link href={`/doctors/${p.doctor._id}`} className="font-medium hover:text-primary hover:underline">
+      <Link href={`/doctors/${p.doctor._id}`} className="font-medium hover:text-link hover:underline">
         {p.doctor.name}
       </Link>
     ) : (

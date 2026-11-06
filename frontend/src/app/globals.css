@@ -34,6 +34,7 @@
   --color-primary-foreground: var(--primary-foreground);
   --color-primary: var(--primary);
   --color-primary-hover: var(--primary-hover);
+  --color-link: var(--link);
   --color-success: var(--success);
   --color-warning: var(--warning);
   --color-info: var(--info);
@@ -62,52 +63,55 @@
 
 :root {
   /*
-   * DocTrack design tokens. Three area themes share one component library:
-   *   public website  -> :root (Clean Healthcare: emerald + soft blue)
-   *   admin portal    -> [data-area="admin"]  (Deep Emerald & Neutral Gray)
-   *   doctor portal   -> [data-area="doctor"] (Medical Navy & Sky Blue)
-   * Themes are applied on <body> via :has() so portals (dialogs, menus, toasts)
-   * inherit the right palette. All text pairs meet WCAG AA.
+   * DocTrack design tokens — one Coral & Slate theme across the public site,
+   * the hospital/admin portal and the doctor portal.
+   * Coral surfaces carry slate text (white on coral fails WCAG AA); text links
+   * and chart marks use teal, which passes on white.
    */
-  --background: #f8fafc;
-  --foreground: #1e293b;
+  --background: #f8faf9;
+  --foreground: #253c48;
   --card: #ffffff;
-  --card-foreground: #1e293b;
+  --card-foreground: #253c48;
   --popover: #ffffff;
-  --popover-foreground: #1e293b;
-  --primary: #047857;
-  --primary-hover: #065f46;
-  --primary-foreground: #ffffff;
-  --secondary: #dbeafe;
-  --secondary-foreground: #1e3a8a;
-  --muted: #f1f5f9;
-  --muted-foreground: #64748b;
-  --accent: #dbeafe;
-  --accent-foreground: #1e40af;
-  --destructive: #dc2626;
+  --popover-foreground: #253c48;
+  --primary: #f5b6a3;
+  --primary-hover: #e98975;
+  --primary-foreground: #253c48;
+  --secondary: #ddf3f5;
+  --secondary-foreground: #253c48;
+  --muted: #eef3f2;
+  --muted-foreground: #586b73;
+  --accent: #fff1e9;
+  --accent-foreground: #253c48;
+  --destructive: #c2410c;
   --success: #15803d;
   --warning: #b45309;
-  --info: #0369a1;
-  --border: #e2e8f0;
-  --input: #e2e8f0;
-  --ring: #047857;
-  --chart-1: #047857;
-  --chart-2: #7dd3fc;
-  --chart-3: #10b981;
-  --chart-4: #1e40af;
+  --info: #397f91;
+  --border: #e3e9e8;
+  --input: #d9e1e0;
+  --ring: #397f91;
+  --link: #397f91;
+  --chart-1: #397f91;
+  --chart-2: #e98975;
+  --chart-3: #253c48;
+  --chart-4: #7fb9c6;
   --chart-5: #94a3b8;
   --radius: 0.625rem;
-  --sidebar: #064e3b;
-  --sidebar-foreground: #d1fae5;
-  --sidebar-primary: #ecfdf5;
-  --sidebar-primary-foreground: #064e3b;
-  --sidebar-accent: #065f46;
+  --sidebar: #253c48;
+  --sidebar-foreground: #ddf3f5;
+  --sidebar-primary: #f5b6a3;
+  --sidebar-primary-foreground: #253c48;
+  --sidebar-accent: #34505e;
   --sidebar-accent-foreground: #ffffff;
-  --sidebar-border: #0b5d48;
-  --sidebar-ring: #7dd3fc;
-  --brand-dot: #7dd3fc;
-  --rose-soft: #fce7f3;
-  /* Coral & Slate palette (public site); defined globally so utilities exist. */
+  --sidebar-border: #34505e;
+  --sidebar-ring: #f5b6a3;
+  --logo-bg: #253c48;
+  --brand-dot: #f5b6a3;
+  --brand-word: #e98975;
+  --rose-soft: #fff1e9;
+  --info-soft: #ddf3f5;
+  --info-soft-foreground: #253c48;
+  /* Named palette colours for direct use. */
   --coral: #f5b6a3;
   --coral-deep: #e98975;
   --slate-deep: #253c48;
@@ -115,84 +119,6 @@
   --ice: #ddf3f5;
   --peach: #fff1e9;
   --cloud: #f8faf9;
-  --info-soft: #dbeafe;
-  --info-soft-foreground: #1e40af;
-}
-
-/*
- * Public website — Coral & Slate (editorial healthcare brand).
- * Coral surfaces carry slate text (white on coral fails WCAG AA); teal is used
- * for text only on white, and for icons/large text on tinted sections.
- */
-body:has([data-area="site"]) {
-  --background: #f8faf9;
-  --foreground: #253c48;
-  --card-foreground: #253c48;
-  --popover-foreground: #253c48;
-  --primary: #f5b6a3;
-  --primary-hover: #e98975;
-  --primary-foreground: #253c48;
-  --secondary: #ddf3f5;
-  --secondary-foreground: #253c48;
-  --accent: #fff1e9;
-  --accent-foreground: #253c48;
-  --muted: #eef3f2;
-  --muted-foreground: #586b73;
-  --border: #e3e9e8;
-  --input: #d9e1e0;
-  --ring: #397f91;
-  --info-soft: #ddf3f5;
-  --info-soft-foreground: #253c48;
-  --rose-soft: #fff1e9;
-  --sidebar: #253c48;
-  --sidebar-foreground: #ddf3f5;
-  --sidebar-border: #34505e;
-  --logo-bg: #253c48;
-  --brand-dot: #f5b6a3;
-  --brand-word: #e98975;
-}
-
-/* Hospital / admin portal — Deep Emerald & Neutral Gray */
-body:has([data-area="admin"]) {
-  --primary: #047857;
-  --primary-hover: #065f46;
-  --secondary: #f1f5f9;
-  --secondary-foreground: #1e293b;
-  --accent: #ecfdf5;
-  --accent-foreground: #065f46;
-  --info: #0369a1;
-  --ring: #047857;
-  --chart-1: #047857;
-  --chart-2: #34d399;
-  --chart-3: #0ea5e9;
-  --sidebar: #064e3b;
-  --sidebar-foreground: #d1fae5;
-  --sidebar-primary: #ecfdf5;
-  --sidebar-primary-foreground: #064e3b;
-  --sidebar-accent: #065f46;
-  --sidebar-border: #0b5d48;
-}
-
-/* Doctor portal — Medical Navy & Sky Blue (declared after admin so it wins when nested) */
-body:has([data-area="doctor"]) {
-  --primary: #1e3a8a;
-  --primary-hover: #1e40af;
-  --secondary: #eff6ff;
-  --secondary-foreground: #1e3a8a;
-  --accent: #eff6ff;
-  --accent-foreground: #1e3a8a;
-  --info: #0ea5e9;
-  --ring: #1e3a8a;
-  --chart-1: #1e3a8a;
-  --chart-2: #38bdf8;
-  --chart-3: #0ea5e9;
-  --sidebar: #172554;
-  --sidebar-foreground: #bfdbfe;
-  --sidebar-primary: #eff6ff;
-  --sidebar-primary-foreground: #172554;
-  --sidebar-accent: #1e3a8a;
-  --sidebar-border: #1e3a8a;
-  --brand-dot: #38bdf8;
 }
 
 @layer base {
