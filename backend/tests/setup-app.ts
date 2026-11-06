@@ -20,6 +20,7 @@ export function setupTestApp() {
     process.env.NODE_ENV = "test";
     process.env.MONGODB_URI = ctx.mongo.getUri("doctor_tracker_test");
     process.env.CLIENT_ORIGIN = "http://localhost:3000";
+    process.env.CLOUDINARY_URL = "cloudinary://123456789012345:test-secret@test-cloud";
 
     await mongoose.connect(process.env.MONGODB_URI);
     const [{ createApp }, models] = await Promise.all([import("../src/app.js"), import("./models.js")]);

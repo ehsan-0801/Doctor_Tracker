@@ -16,6 +16,8 @@ export const doctorSchema = z.object({
   hospital: z.string().trim().min(2, "Hospital is required").max(160),
   phone: z.string().trim().regex(PHONE_PATTERN, "Enter a valid phone number"),
   email: z.string().trim().min(1, "Email is required").pipe(z.email("Enter a valid email")),
+  qualifications: z.string().trim().max(160, "Keep it under 160 characters"),
+  photoUrl: z.union([z.literal(""), z.string().url().startsWith("https://", "Use an https:// image URL")]),
 });
 
 export const patientSchema = z.object({

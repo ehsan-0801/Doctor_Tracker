@@ -4,7 +4,7 @@ import * as doctorService from "../services/doctor.service.js";
 import * as patientService from "../services/patient.service.js";
 import { sendSuccess } from "../utils/response.js";
 import { idParamsSchema, optionalTrimmed } from "../validators/common.js";
-import { createDoctorSchema, doctorListQuerySchema } from "../validators/doctor.validator.js";
+import { createDoctorSchema, doctorListQuerySchema, updateDoctorSchema } from "../validators/doctor.validator.js";
 import {
   createDoctorPatientSchema,
   doctorPatientParamsSchema,
@@ -24,6 +24,12 @@ export async function list(req: Request, res: Response) {
 export async function create(req: Request, res: Response) {
   const doctor = await doctorService.createDoctor(createDoctorSchema.parse(req.body));
   sendSuccess(res, "Doctor created successfully", doctor, { status: 201 });
+}
+
+export async function update(req: Request, res: Response) {
+  const { id } = idParamsSchema.parse(req.params);
+  const doctor = await doctorService.updateDoctor(id, updateDoctorSchema.parse(req.body));
+  sendSuccess(res, "Doctor updated successfully", doctor);
 }
 
 export async function getById(req: Request, res: Response) {

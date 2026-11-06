@@ -29,6 +29,7 @@ export const doctorsApi = {
   list: (params: DoctorListParams) => api.list<Doctor>("/doctors", { ...params }),
   get: (id: string) => api.get<Doctor>(`/doctors/${id}`),
   create: (values: DoctorFormValues) => api.post<Doctor>("/doctors", values),
+  update: (id: string, values: Partial<DoctorFormValues>) => api.patch<Doctor>(`/doctors/${id}`, values),
   filters: () => api.get<DoctorFilterOptions>("/doctors/filters"),
   options: (search: string) => api.get<DoctorSummary[]>("/doctors/options", { search, limit: 20 }),
   patients: (id: string, params: PatientListParams) => api.list<Patient>(`/doctors/${id}/patients`, { ...params }),
@@ -79,4 +80,18 @@ export const settingsApi = {
   get: () => api.get<import("@/types/site").SiteSettings>("/settings"),
   update: (settings: import("@/types/site").SiteSettings) =>
     api.put<import("@/types/site").SiteSettings>("/settings", settings),
+};
+
+export interface UploadSignature {
+  signature: string;
+  timestamp: number;
+  folder: string;
+  allowed_formats: string;
+  apiKey: string;
+  cloudName: string;
+  uploadUrl: string;
+}
+
+export const uploadsApi = {
+  signature: (purpose: "doctors" | "site") => api.post<UploadSignature>("/uploads/signature", { purpose }),
 };

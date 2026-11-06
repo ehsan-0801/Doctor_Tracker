@@ -55,6 +55,8 @@ export interface Doctor {
   hospital: string;
   phone: string;
   email: string;
+  qualifications?: string;
+  photoUrl?: string;
   patientCount: number;
   createdAt: string;
   updatedAt: string;

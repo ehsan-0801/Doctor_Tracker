@@ -14,6 +14,10 @@ export const createDoctorSchema = z.object({
   photoUrl: z.union([z.literal(""), z.url({ protocol: /^https$/, message: "Use an https:// image URL" }).max(500)]).optional(),
 });
 
+export const updateDoctorSchema = createDoctorSchema
+  .partial()
+  .refine((body) => Object.values(body).some((v) => v !== undefined), "Provide at least one field to update");
+
 export const doctorListQuerySchema = withDateRangeCheck(
   listQueryBase.extend({
     specialization: optionalTrimmed(120),
@@ -23,4 +27,5 @@ export const doctorListQuerySchema = withDateRangeCheck(
 );
 
 export type CreateDoctorInput = z.infer<typeof createDoctorSchema>;
+export type UpdateDoctorInput = z.infer<typeof updateDoctorSchema>;
 export type DoctorListQuery = z.infer<typeof doctorListQuerySchema>;

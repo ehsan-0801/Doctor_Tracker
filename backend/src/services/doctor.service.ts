@@ -4,7 +4,7 @@ import { Patient } from "../models/Patient.js";
 import { ApiError } from "../utils/ApiError.js";
 import { containsPattern, dateRangeFilter } from "../utils/query.js";
 import { buildPagination } from "../utils/response.js";
-import type { CreateDoctorInput, DoctorListQuery } from "../validators/doctor.validator.js";
+import type { CreateDoctorInput, DoctorListQuery, UpdateDoctorInput } from "../validators/doctor.validator.js";
 
 const LIST_FIELDS = "name specialization hospital phone email qualifications photoUrl createdAt updatedAt";
 
@@ -67,6 +67,17 @@ export async function createDoctor(input: CreateDoctorInput) {
   }
   const doctor = await Doctor.create(input);
   return { ...doctor.toObject(), patientCount: 0 };
+}
+
+export async function updateDoctor(id: string, input: UpdateDoctorInput) {
+  if (input.email && (await Doctor.exists({ email: input.email, _id: { $ne: id } }))) {
+    throw ApiError.conflict("A doctor with this email already exists", [
+      { field: "email", message: "Email is already in use" },
+    ]);
+  }
+  const updated = await Doctor.findByIdAndUpdate(id, input, { runValidators: true }).select("_id").lean();
+  if (!updated) throw ApiError.notFound("Doctor not found");
+  return getDoctorById(id);
 }
 
 export async function assertDoctorExists(id: string): Promise<void> {

@@ -6,6 +6,7 @@ import { doctorRouter } from "./doctor.routes.js";
 import { patientRouter } from "./patient.routes.js";
 import { publicRouter } from "./public.routes.js";
 import { settingsRouter } from "./settings.routes.js";
+import { uploadRouter } from "./upload.routes.js";
 import { userRouter } from "./user.routes.js";
 
 export const apiRouter = Router();
@@ -23,3 +24,4 @@ apiRouter.use("/patients", patientRouter);
 apiRouter.use("/dashboard", dashboardRouter);
 apiRouter.use("/users", userRouter);
 apiRouter.use("/settings", settingsRouter);
+apiRouter.use("/uploads", uploadRouter);

@@ -10,6 +10,8 @@ export const PERMISSIONS = {
   "dashboard:read": ["admin", "management", "staff"],
   "doctors:read": ["admin", "management", "staff"],
   "doctors:create": ["admin"],
+  "doctors:update": ["admin"],
+  "media:upload": ["admin"],
   "patients:read": ["admin", "management", "staff"],
   "patients:write": ["admin", "staff"],
   "patients:assign": ["admin", "staff"],

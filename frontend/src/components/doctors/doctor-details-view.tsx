@@ -2,7 +2,7 @@
 
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
-import { Building2, CalendarDays, Mail, Phone, Plus, Stethoscope, Users } from "lucide-react";
+import { Building2, CalendarDays, Mail, Pencil, Phone, Plus, Stethoscope, Users } from "lucide-react";
 import { PatientFormDialog } from "@/components/patients/patient-form-dialog";
 import { PatientsPanel } from "@/components/patients/patients-panel";
 import { Breadcrumbs } from "@/components/shared/breadcrumbs";
@@ -14,7 +14,9 @@ import { ApiError } from "@/lib/api/client";
 import { doctorsApi } from "@/lib/api/endpoints";
 import { queryKeys } from "@/lib/api/query-keys";
 import { formatDate, formatNumber } from "@/lib/format";
+import { cloudinaryImage } from "@/lib/cloudinary";
 import { DoctorAvatar } from "./doctor-avatar";
+import { DoctorFormDialog } from "./doctor-form-dialog";
 
 function Detail({ icon: Icon, label, children }: { icon: typeof Mail; label: string; children: React.ReactNode }) {
   return (
@@ -32,7 +34,10 @@ function Detail({ icon: Icon, label, children }: { icon: typeof Mail; label: str
 
 export function DoctorDetailsView({ id }: { id: string }) {
   const [addOpen, setAddOpen] = useState(false);
-  const canAdd = useSession().can("patients:write");
+  const session = useSession();
+  const canAdd = session.can("patients:write");
+  const canEdit = session.can("doctors:update");
+  const [editOpen, setEditOpen] = useState(false);
   const doctor = useQuery({ queryKey: queryKeys.doctors.detail(id), queryFn: () => doctorsApi.get(id) });
   const d = doctor.data;
 
@@ -71,16 +76,31 @@ export function DoctorDetailsView({ id }: { id: string }) {
           <>
             <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
               <div className="flex min-w-0 items-center gap-4">
-                <DoctorAvatar name={d.name} className="size-14 text-base" />
+                {d.photoUrl ? (
+                  // eslint-disable-next-line @next/next/no-img-element -- CDN thumbnail
+                  <img src={cloudinaryImage(d.photoUrl, { width: 112, height: 112 })} alt="" className="size-14 rounded-full object-cover" />
+                ) : (
+                  <DoctorAvatar name={d.name} className="size-14 text-base" />
+                )}
                 <div className="min-w-0">
                   <h1 className="truncate text-2xl font-semibold">{d.name}</h1>
-                  <p className="text-sm text-muted-foreground">{d.specialization}</p>
+                  <p className="text-sm text-muted-foreground">
+                    {d.specialization}
+                    {d.qualifications ? ` · ${d.qualifications}` : ""}
+                  </p>
                 </div>
               </div>
-              <div className="flex items-center gap-2 self-start rounded-lg bg-accent px-3 py-2 text-accent-foreground sm:self-auto">
+              <div className="flex flex-wrap items-center gap-2 self-start sm:self-auto">
+              {canEdit && (
+                <Button variant="outline" size="lg" className="h-10" onClick={() => setEditOpen(true)}>
+                  <Pencil aria-hidden /> Edit
+                </Button>
+              )}
+              <div className="flex items-center gap-2 rounded-lg bg-accent px-3 py-2 text-accent-foreground">
                 <Users className="size-4" aria-hidden />
                 <span className="text-sm font-semibold tabular-nums">{formatNumber(d.patientCount)}</span>
                 <span className="text-sm">associated {d.patientCount === 1 ? "patient" : "patients"}</span>
+              </div>
               </div>
             </div>
             <dl className="mt-6 grid gap-4 border-t pt-5 sm:grid-cols-2 xl:grid-cols-4">
@@ -112,6 +132,7 @@ export function DoctorDetailsView({ id }: { id: string }) {
         {d && <PatientsPanel doctor={d} />}
       </section>
 
+      {d && canEdit && <DoctorFormDialog open={editOpen} onOpenChange={setEditOpen} doctor={d} />}
       {d && canAdd && <PatientFormDialog open={addOpen} onOpenChange={setAddOpen} mode={{ kind: "create-for-doctor", doctor: d }} />}
     </div>
   );

@@ -156,6 +156,7 @@ npm run dev                 # http://localhost:4000
 | `MONGODB_URI` | MongoDB connection string including `/doctor_tracker` |
 | `ADMIN_EMAIL` | Administrator email created by `npm run seed` |
 | `ADMIN_PASSWORD` | Administrator password (at least 8 characters), used only by the seed |
+| `CLOUDINARY_URL` | Optional. `cloudinary://<api_key>:<api_secret>@<cloud_name>` enables doctor photo uploads. The API signs each upload (folder `doctrack/doctors`, JPG/PNG/WebP only); the secret never reaches the browser. |
 
 Seed options:
 
