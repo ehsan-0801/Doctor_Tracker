@@ -8,7 +8,7 @@ export function DoctorPhoto({ doctor, className }: { doctor: PublicDoctor; class
   if (doctor.photoUrl) {
     return (
       // eslint-disable-next-line @next/next/no-img-element -- remote CDN image (already resized by the CDN)
-      <img src={cloudinaryImage(doctor.photoUrl, { width: 600, height: 450 })} alt={doctor.name} loading="lazy" className={cn("bg-muted object-cover", className)} />
+      <img src={cloudinaryImage(doctor.photoUrl, { width: 480, height: 600 })} alt={doctor.name} loading="lazy" className={cn("bg-muted object-cover", className)} />
     );
   }
   return (
