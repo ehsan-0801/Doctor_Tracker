@@ -6,7 +6,7 @@ import { getPublicSite } from "@/lib/server/public-api";
 export default async function SiteLayout({ children }: LayoutProps<"/">) {
   const site = await getPublicSite();
   return (
-    <div className="flex min-h-screen flex-col">
+    <div data-area="site" className="flex min-h-screen flex-col">
       <a
         href="#site-main"
         className="sr-only z-50 rounded-md bg-primary px-4 py-2 text-primary-foreground focus:not-sr-only focus:fixed focus:top-3 focus:left-3"

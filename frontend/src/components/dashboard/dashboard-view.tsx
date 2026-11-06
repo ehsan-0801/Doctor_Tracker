@@ -1,8 +1,9 @@
 "use client";
 
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
-import { useState } from "react";
-import { CalendarPlus, Stethoscope, UserRoundCheck, Users } from "lucide-react";
+import { useState, useSyncExternalStore } from "react";
+import { format } from "date-fns";
+import { CalendarDays, CalendarPlus, Stethoscope, UserRoundCheck, Users } from "lucide-react";
 import {
   Area,
   AreaChart,
@@ -18,12 +19,15 @@ import {
 import { PageHeader } from "@/components/layout/page-header";
 import { ErrorState } from "@/components/shared/states";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useSession } from "@/hooks/use-session";
 import { dashboardApi } from "@/lib/api/endpoints";
 import { queryKeys } from "@/lib/api/query-keys";
 import { formatMonth, formatMonthShort, formatNumber } from "@/lib/format";
 import { CHART, ChartCard, ChartTooltip } from "./chart-card";
 import { RecentPatients } from "./recent-patients";
 import { StatCard } from "./stat-card";
+
+const noopSubscribe = () => () => {};
 
 const PERIODS = [
   { months: 6, label: "Last 6 months" },
@@ -42,6 +46,9 @@ function trendText(current: number, previous: number, days: number) {
 
 export function DashboardView() {
   const [months, setMonths] = useState(12);
+  const { user } = useSession();
+  // Empty on the server so prerendered HTML does not depend on the build date.
+  const today = useSyncExternalStore(noopSubscribe, () => format(new Date(), "EEEE, d MMMM"), () => "");
   const stats = useQuery({ queryKey: [...queryKeys.dashboard.all, "stats"], queryFn: dashboardApi.stats });
   const perDoctor = useQuery({
     queryKey: [...queryKeys.dashboard.all, "per-doctor"],
@@ -62,7 +69,16 @@ export function DashboardView() {
 
   return (
     <div className="space-y-6">
-      <PageHeader title="Dashboard" description="Overview of doctors, patients, and registration activity." />
+      <PageHeader
+        title={user ? `Hello, ${user.name.split(" ")[0]}` : "Dashboard"}
+        description="Here is the latest from your care network."
+        actions={
+          today && <span className="inline-flex h-10 items-center gap-2 rounded-lg border bg-card px-3 text-sm text-muted-foreground">
+            <CalendarDays className="size-4" aria-hidden />
+            {today}
+          </span>
+        }
+      />
 
       {stats.error && !s ? (
         <div className="rounded-xl border bg-card">

@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { ArrowLeft } from "lucide-react";
 import Link from "next/link";
 import { Suspense } from "react";
 import { Brand } from "@/components/layout/brand";
@@ -8,7 +9,7 @@ export const metadata: Metadata = { title: "Sign in" };
 
 export default function LoginPage() {
   return (
-    <main className="flex min-h-screen items-center justify-center px-4 py-10">
+    <main data-area="admin" className="flex min-h-screen items-center justify-center px-4 py-10">
       <div className="w-full max-w-[400px]">
         <div className="mb-8 flex flex-col items-center gap-4 text-center">
           <Link href="/" aria-label="DocTrack home"><Brand compact /></Link>
@@ -24,8 +25,8 @@ export default function LoginPage() {
         </div>
         <p className="mt-6 text-center text-xs text-muted-foreground">For hospital administrators, management, front-desk staff and doctors.</p>
         <p className="mt-3 text-center text-sm">
-          <Link href="/" className="font-medium text-primary hover:underline">
-            ← Back to website
+          <Link href="/" className="inline-flex items-center gap-1.5 font-medium text-primary hover:underline">
+            <ArrowLeft className="size-4" aria-hidden /> Back to website
           </Link>
         </p>
       </div>
