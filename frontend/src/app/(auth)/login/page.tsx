@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { ArrowLeft, ShieldCheck, Stethoscope, Users } from "lucide-react";
 import Link from "next/link";
 import { Suspense } from "react";
+import { AreaMarker } from "@/components/layout/area-marker";
 import { Brand } from "@/components/layout/brand";
 import { LoginForm } from "./login-form";
 
@@ -17,6 +18,7 @@ const POINTS = [
 export default function LoginPage() {
   return (
     <main data-area="site" className="grid min-h-screen bg-cloud lg:grid-cols-[1.05fr_1fr]">
+      <AreaMarker area="site" />
       {/* Brand panel (desktop) */}
       <section aria-hidden className="relative hidden overflow-hidden bg-slate-deep text-ice lg:flex lg:flex-col lg:justify-between lg:p-12 xl:p-16">
         <Link href="/" className="w-fit rounded-md focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none" tabIndex={-1}>

@@ -3,7 +3,7 @@
 @import "shadcn/tailwind.css";
 
 /* Dark utilities apply only inside the signed-in portals when dark mode is on. */
-@custom-variant dark (&:where([data-theme="dark"] [data-area="admin"], [data-theme="dark"] [data-area="admin"] *));
+@custom-variant dark (&:where([data-theme="dark"][data-area="admin"] *));
 
 @theme inline {
   --color-background: var(--background);
@@ -129,7 +129,7 @@
  * slate sidebar and status colours keep their roles. Text turns light and teal
  * text/marks use a lighter tint so everything stays WCAG AA on black.
  */
-html[data-theme="dark"] body:has([data-area="admin"]) {
+html[data-theme="dark"][data-area="admin"] {
   color-scheme: dark;
   --background: #0f1112;
   --foreground: #e7ecec;

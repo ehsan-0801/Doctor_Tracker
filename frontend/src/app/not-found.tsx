@@ -1,11 +1,13 @@
 import Link from "next/link";
 import { ArrowLeft, LayoutDashboard, LogIn } from "lucide-react";
+import { AreaMarker } from "@/components/layout/area-marker";
 import { Brand } from "@/components/layout/brand";
 import { Button } from "@/components/ui/button";
 
 export default function NotFound() {
   return (
     <main className="flex min-h-screen flex-col items-center justify-center gap-8 bg-background px-4 text-center">
+      <AreaMarker area="site" />
       <Brand />
       <div className="space-y-2">
         <p className="text-sm font-semibold tracking-[0.18em] text-muted-foreground uppercase">Error 404</p>

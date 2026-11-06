@@ -1,4 +1,5 @@
 import { Suspense } from "react";
+import { AreaMarker } from "@/components/layout/area-marker";
 import { AppHeader } from "@/components/layout/app-header";
 import { AppSidebar } from "@/components/layout/app-sidebar";
 
@@ -6,6 +7,7 @@ export default function DashboardLayout({ children }: LayoutProps<"/">) {
   // The background gradient paints the sidebar column for the full page height (the sidebar itself is fixed).
   return (
     <div data-area="admin" className="min-h-screen md:bg-[linear-gradient(to_right,var(--sidebar)_72px,transparent_72px)] lg:bg-[linear-gradient(to_right,var(--sidebar)_250px,transparent_250px)]">
+      <AreaMarker area="admin" />
       <a
         href="#main-content"
         className="sr-only z-50 rounded-md bg-primary px-4 py-2 text-primary-foreground focus:not-sr-only focus:fixed focus:top-3 focus:left-3"

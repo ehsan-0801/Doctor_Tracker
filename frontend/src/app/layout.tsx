@@ -13,7 +13,10 @@ export const metadata: Metadata = {
   description: "DocTrack connects patients with the right specialists and keeps hospital care teams in sync.",
 };
 
-const THEME_SCRIPT = `try{if(localStorage.getItem("doctrack-theme")==="dark")document.documentElement.dataset.theme="dark"}catch(e){}`;
+// Before first paint: mark the visible area from the URL (portal vs public) and
+// apply the saved portal theme. AreaMarker keeps data-area in sync afterwards.
+const PORTAL_PATHS = /^\/(dashboard|doctors|patients|users|settings|doctor)(\/|$)/;
+const THEME_SCRIPT = `try{var d=document.documentElement;d.dataset.area=${PORTAL_PATHS}.test(location.pathname)?"admin":"site";if(localStorage.getItem("doctrack-theme")==="dark")d.dataset.theme="dark"}catch(e){}`;
 
 export const viewport: Viewport = { themeColor: "#253c48" };
 
