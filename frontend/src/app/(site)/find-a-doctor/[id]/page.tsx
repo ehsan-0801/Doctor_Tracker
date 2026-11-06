@@ -21,10 +21,14 @@ async function DoctorProfile({ params }: { params: Promise<{ id: string }> }) {
 
 export default function DoctorProfilePage({ params }: PageProps<"/find-a-doctor/[id]">) {
   return (
-    <div className="mx-auto max-w-6xl px-4 py-10 sm:px-6 lg:px-8">
-      <Suspense fallback={<Skeleton className="h-72 rounded-3xl" />}>
-        <DoctorProfile params={params} />
-      </Suspense>
-    </div>
+    <Suspense
+      fallback={
+        <div className="mx-auto max-w-7xl px-4 py-14 sm:px-6 lg:px-8">
+          <Skeleton className="h-96 rounded-md" />
+        </div>
+      }
+    >
+      <DoctorProfile params={params} />
+    </Suspense>
   );
 }

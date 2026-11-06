@@ -40,6 +40,13 @@
   --color-info-soft: var(--info-soft);
   --color-info-soft-foreground: var(--info-soft-foreground);
   --color-rose-soft: var(--rose-soft);
+  --color-coral: var(--coral);
+  --color-coral-deep: var(--coral-deep);
+  --color-slate-deep: var(--slate-deep);
+  --color-teal: var(--teal);
+  --color-ice: var(--ice);
+  --color-peach: var(--peach);
+  --color-cloud: var(--cloud);
   --color-popover-foreground: var(--popover-foreground);
   --color-popover: var(--popover);
   --color-card-foreground: var(--card-foreground);
@@ -100,17 +107,49 @@
   --sidebar-ring: #7dd3fc;
   --brand-dot: #7dd3fc;
   --rose-soft: #fce7f3;
+  /* Coral & Slate palette (public site); defined globally so utilities exist. */
+  --coral: #f5b6a3;
+  --coral-deep: #e98975;
+  --slate-deep: #253c48;
+  --teal: #397f91;
+  --ice: #ddf3f5;
+  --peach: #fff1e9;
+  --cloud: #f8faf9;
   --info-soft: #dbeafe;
   --info-soft-foreground: #1e40af;
 }
 
-/* Public website — Clean Healthcare White + Emerald + Soft Blue (rose for small accents) */
+/*
+ * Public website — Coral & Slate (editorial healthcare brand).
+ * Coral surfaces carry slate text (white on coral fails WCAG AA); teal is used
+ * for text only on white, and for icons/large text on tinted sections.
+ */
 body:has([data-area="site"]) {
-  --muted-foreground: #475569;
-  --accent: #ecfdf5;
-  --accent-foreground: #065f46;
-  --secondary: #dbeafe;
-  --secondary-foreground: #1e40af;
+  --background: #f8faf9;
+  --foreground: #253c48;
+  --card-foreground: #253c48;
+  --popover-foreground: #253c48;
+  --primary: #f5b6a3;
+  --primary-hover: #e98975;
+  --primary-foreground: #253c48;
+  --secondary: #ddf3f5;
+  --secondary-foreground: #253c48;
+  --accent: #fff1e9;
+  --accent-foreground: #253c48;
+  --muted: #eef3f2;
+  --muted-foreground: #586b73;
+  --border: #e3e9e8;
+  --input: #d9e1e0;
+  --ring: #397f91;
+  --info-soft: #ddf3f5;
+  --info-soft-foreground: #253c48;
+  --rose-soft: #fff1e9;
+  --sidebar: #253c48;
+  --sidebar-foreground: #ddf3f5;
+  --sidebar-border: #34505e;
+  --logo-bg: #253c48;
+  --brand-dot: #f5b6a3;
+  --brand-word: #e98975;
 }
 
 /* Hospital / admin portal — Deep Emerald & Neutral Gray */

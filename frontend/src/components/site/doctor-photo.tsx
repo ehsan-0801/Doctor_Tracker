@@ -12,14 +12,12 @@ export function DoctorPhoto({ doctor, className }: { doctor: PublicDoctor; class
     );
   }
   return (
-    <div
-      aria-hidden
-      className={cn(
-        "flex items-center justify-center bg-[linear-gradient(135deg,var(--accent),var(--info-soft))] text-2xl font-semibold text-accent-foreground",
-        className,
-      )}
-    >
-      {initials(doctor.name)}
+    <div aria-hidden className={cn("relative flex items-center justify-center overflow-hidden bg-peach", className)}>
+      <span className="absolute -right-8 -bottom-8 size-32 rounded-full bg-coral/40" />
+      <span className="absolute -top-6 -left-6 size-20 rounded-full bg-ice" />
+      <span className="relative flex aspect-square w-2/5 max-w-28 items-center justify-center rounded-full bg-white text-[clamp(1.25rem,2.5vw,2rem)] font-semibold tracking-tight text-slate-deep shadow-sm">
+        {initials(doctor.name)}
+      </span>
     </div>
   );
 }

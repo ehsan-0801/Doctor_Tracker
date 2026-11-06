@@ -15,32 +15,31 @@ export function SiteFooter({ site }: { site: PublicSite }) {
   const name = localized(lang, site.hospitalName, site.hospitalNameBn);
 
   return (
-    <footer className="bg-sidebar text-sidebar-foreground">
-      <div className="mx-auto grid max-w-7xl gap-10 px-4 py-12 sm:px-6 md:grid-cols-[1.4fr_1fr_1fr] lg:px-8">
-        <div className="space-y-4">
+    <footer className="bg-slate-deep text-ice">
+      <div className="mx-auto grid max-w-7xl gap-12 px-4 py-16 sm:px-6 md:grid-cols-[1.6fr_1fr_1fr] lg:px-8">
+        <div className="space-y-5">
           <Brand inverted />
-          <p className="max-w-sm text-sm leading-relaxed">
-            {name} — {localized(lang, site.tagline, site.taglineBn)}
-          </p>
+          <p className="max-w-sm text-2xl leading-snug font-semibold tracking-tight text-white">{localized(lang, site.tagline, site.taglineBn)}</p>
+          <p className="text-sm">{name}</p>
         </div>
         <div>
-          <h2 className="mb-3 text-sm font-semibold text-white">{t.footer.explore}</h2>
+          <h2 className="mb-4 text-xs font-semibold tracking-[0.18em] text-coral uppercase">{t.footer.explore}</h2>
           <ul className="space-y-2 text-sm">
-            <li><Link className="hover:text-white" href="/find-a-doctor">{t.nav.findDoctor}</Link></li>
-            <li><Link className="hover:text-white" href="/#services">{t.nav.services}</Link></li>
-            <li><Link className="hover:text-white" href="/#about">{t.footer.aboutUs}</Link></li>
-            <li><Link className="hover:text-white" href="/login">{t.footer.signIn}</Link></li>
+            <li><Link className="transition-colors hover:text-coral" href="/find-a-doctor">{t.nav.findDoctor}</Link></li>
+            <li><Link className="transition-colors hover:text-coral" href="/#services">{t.nav.services}</Link></li>
+            <li><Link className="transition-colors hover:text-coral" href="/#about">{t.footer.aboutUs}</Link></li>
+            <li><Link className="transition-colors hover:text-coral" href="/login">{t.footer.signIn}</Link></li>
           </ul>
         </div>
         <address className="space-y-2.5 text-sm not-italic">
-          <h2 className="mb-3 text-sm font-semibold text-white">{t.footer.contact}</h2>
+          <h2 className="mb-4 text-xs font-semibold tracking-[0.18em] text-coral uppercase">{t.footer.contact}</h2>
           {address && <p className="flex gap-2"><MapPin className="mt-0.5 size-4 shrink-0" aria-hidden />{address}</p>}
-          {contact.phone && <p className="flex gap-2"><Phone className="mt-0.5 size-4 shrink-0" aria-hidden /><a className="hover:text-white" href={`tel:${contact.phone.replace(/[^\d+]/g, "")}`}>{contact.phone}</a></p>}
-          {contact.email && <p className="flex gap-2"><Mail className="mt-0.5 size-4 shrink-0" aria-hidden /><a className="hover:text-white" href={`mailto:${contact.email}`}>{contact.email}</a></p>}
+          {contact.phone && <p className="flex gap-2"><Phone className="mt-0.5 size-4 shrink-0" aria-hidden /><a className="transition-colors hover:text-coral" href={`tel:${contact.phone.replace(/[^\d+]/g, "")}`}>{contact.phone}</a></p>}
+          {contact.email && <p className="flex gap-2"><Mail className="mt-0.5 size-4 shrink-0" aria-hidden /><a className="transition-colors hover:text-coral" href={`mailto:${contact.email}`}>{contact.email}</a></p>}
           {hours && <p className="flex gap-2"><Clock className="mt-0.5 size-4 shrink-0" aria-hidden />{hours}</p>}
         </address>
       </div>
-      <div className="border-t border-sidebar-border">
+      <div className="border-t border-white/10">
         <p className="mx-auto max-w-7xl px-4 py-4 text-xs sm:px-6 lg:px-8">
           © {name}. {t.footer.powered}
         </p>

@@ -80,34 +80,32 @@ export function SiteHeader({ emergencyPhone }: { emergencyPhone: string }) {
   const tel = emergencyPhone.replace(/[^\d+]/g, "");
 
   return (
-    <header className="sticky top-0 z-40 border-b bg-card/90 backdrop-blur supports-[backdrop-filter]:bg-card/80">
-      <div className="mx-auto flex h-16 max-w-7xl items-center gap-4 px-4 sm:px-6 lg:px-8">
-        <Link href="/" aria-label="DocTrack" className="shrink-0 rounded-lg focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none">
+    <header className="sticky top-0 z-40 border-b border-border/80 bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/85">
+      <div className="mx-auto flex h-[72px] max-w-7xl items-center gap-6 px-4 sm:px-6 lg:px-8">
+        <Link href="/" aria-label="DocTrack" className="shrink-0 rounded-md focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none">
           <Brand />
         </Link>
 
         <nav aria-label="Main" className="hidden flex-1 justify-center lg:flex">
-          <div ref={navRef} className="relative flex items-center gap-1 rounded-full bg-muted/70 p-1">
+          <div ref={navRef} className="relative flex items-center gap-1">
+            {/* Coral underline that slides to the active link. */}
             <span
               ref={indicatorRef}
               aria-hidden
-              className="absolute top-1 bottom-1 left-0 rounded-full bg-card shadow-sm ring-1 ring-border transition-[transform,width,opacity] duration-300 ease-out motion-reduce:transition-none"
+              className="absolute -bottom-[23px] left-0 h-[3px] rounded-full bg-coral-deep transition-[transform,width,opacity] duration-300 ease-out motion-reduce:transition-none"
               style={{ opacity: 0 }}
-            >
-              <span className="absolute inset-x-4 -bottom-0.5 h-0.5 rounded-full bg-primary" />
-            </span>
+            />
             {LINKS.map((link) => {
               const active = activeKey === link.key;
-              const isPage = active && !link.section;
               return (
                 <Link
                   key={link.key}
                   href={link.href}
-                  aria-current={isPage ? "page" : undefined}
+                  aria-current={active && !link.section ? "page" : undefined}
                   data-active={active}
                   className={cn(
-                    "relative z-10 rounded-full px-4 py-1.5 text-sm font-medium transition-colors duration-200",
-                    active ? "text-primary" : "text-muted-foreground hover:text-foreground",
+                    "relative rounded-md px-3.5 py-2 text-[15px] font-medium transition-colors duration-200 focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none",
+                    active ? "text-slate-deep" : "text-muted-foreground hover:bg-cloud hover:text-slate-deep",
                   )}
                 >
                   {t.nav[link.key]}
@@ -120,11 +118,18 @@ export function SiteHeader({ emergencyPhone }: { emergencyPhone: string }) {
         <div className="ml-auto hidden items-center gap-3 lg:flex">
           <LanguageToggle />
           {emergencyPhone && (
-            <a href={`tel:${tel}`} className="hidden items-center gap-1.5 rounded-full bg-[var(--rose-soft)] px-3 py-1.5 text-sm font-medium text-destructive xl:flex">
-              <Phone className="size-4" aria-hidden /> {emergencyPhone}
+            <a
+              href={`tel:${tel}`}
+              className="hidden items-center gap-2 text-sm font-semibold text-slate-deep xl:flex"
+              aria-label={`${t.emergency} ${emergencyPhone}`}
+            >
+              <span className="flex size-8 items-center justify-center rounded-full bg-peach text-coral-deep">
+                <Phone className="size-4" aria-hidden />
+              </span>
+              {emergencyPhone}
             </a>
           )}
-          <Button asChild size="lg" className="h-10 rounded-full px-5">
+          <Button asChild variant="outline" size="lg" className="h-10 rounded-md border-slate-deep px-4 text-slate-deep hover:bg-slate-deep hover:text-white">
             <Link href="/login">{t.staffSignIn}</Link>
           </Button>
         </div>
@@ -145,8 +150,8 @@ export function SiteHeader({ emergencyPhone }: { emergencyPhone: string }) {
       </div>
 
       {open && (
-        <nav id="site-mobile-menu" aria-label="Main" className="border-t bg-card px-4 pb-4 lg:hidden">
-          <ul className="space-y-1 py-2">
+        <nav id="site-mobile-menu" aria-label="Main" className="border-t bg-white px-4 pb-5 lg:hidden">
+          <ul className="divide-y py-1">
             {LINKS.map((link) => {
               const active = activeKey === link.key;
               return (
@@ -156,25 +161,26 @@ export function SiteHeader({ emergencyPhone }: { emergencyPhone: string }) {
                     onClick={() => setOpen(false)}
                     aria-current={active && !link.section ? "page" : undefined}
                     className={cn(
-                      "flex h-12 items-center rounded-lg border-l-4 px-3 text-sm font-medium transition-colors",
-                      active ? "border-primary bg-accent text-accent-foreground" : "border-transparent hover:bg-muted",
+                      "flex h-12 items-center gap-3 text-base font-medium",
+                      active ? "text-slate-deep" : "text-muted-foreground",
                     )}
                   >
+                    <span className={cn("h-5 w-[3px] rounded-full", active ? "bg-coral-deep" : "bg-transparent")} aria-hidden />
                     {t.nav[link.key]}
                   </Link>
                 </li>
               );
             })}
           </ul>
-          <div className="grid gap-2">
+          <div className="mt-3 grid gap-2">
             {emergencyPhone && (
-              <Button asChild variant="outline" size="lg" className="h-11 text-destructive">
+              <Button asChild variant="outline" size="lg" className="h-11 rounded-md">
                 <a href={`tel:${tel}`}>
                   <Phone aria-hidden /> {t.emergency} {emergencyPhone}
                 </a>
               </Button>
             )}
-            <Button asChild size="lg" className="h-11">
+            <Button asChild size="lg" className="h-11 rounded-md bg-slate-deep text-white hover:bg-slate-deep/90">
               <Link href="/login">{t.staffSignIn}</Link>
             </Button>
           </div>

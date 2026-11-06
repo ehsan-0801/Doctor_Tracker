@@ -12,7 +12,7 @@ const OPTIONS = [
 export function LanguageToggle({ className }: { className?: string }) {
   const { lang, setLang, t } = useLanguage();
   return (
-    <div role="group" aria-label={t.switchLanguage} className={cn("inline-flex items-center gap-1 rounded-full border bg-card p-1", className)}>
+    <div role="group" aria-label={t.switchLanguage} className={cn("inline-flex items-center gap-0.5 rounded-md border bg-white p-0.5", className)}>
       <Languages className="ml-1.5 size-4 text-muted-foreground" aria-hidden />
       {OPTIONS.map((option) => (
         <button
@@ -23,8 +23,8 @@ export function LanguageToggle({ className }: { className?: string }) {
           aria-label={option.name}
           onClick={() => setLang(option.value)}
           className={cn(
-            "h-7 min-w-9 rounded-full px-2.5 text-xs font-semibold transition-colors focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none",
-            lang === option.value ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground",
+            "h-7 min-w-9 rounded px-2.5 text-xs font-semibold transition-colors focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none",
+            lang === option.value ? "bg-coral text-slate-deep" : "text-muted-foreground hover:text-slate-deep",
           )}
         >
           {option.label}

@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { ArrowLeft, Building2, GraduationCap, Phone, Stethoscope } from "lucide-react";
+import { ArrowLeft, Building2, Clock, GraduationCap, Phone, Stethoscope } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { localized } from "@/lib/i18n/dictionaries";
 import type { PublicDoctor, PublicSite } from "@/types/site";
@@ -14,47 +14,71 @@ export function DoctorProfileView({ doctor, site }: { doctor: PublicDoctor; site
   const hours = localized(lang, site.contact.hours, site.contact.hoursBn);
 
   return (
-    <div className="space-y-6">
-      <Link href="/find-a-doctor" className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground">
-        <ArrowLeft className="size-4" aria-hidden /> {t.profile.allDoctors}
+    <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8 lg:py-14">
+      <Link href="/find-a-doctor" className="group inline-flex items-center gap-2 text-sm font-medium text-teal">
+        <ArrowLeft className="size-4 transition-transform group-hover:-translate-x-0.5 motion-reduce:transition-none" aria-hidden />
+        {t.profile.allDoctors}
       </Link>
-      <article className="grid gap-6 lg:grid-cols-[1.4fr_1fr]">
-        <section className="overflow-hidden rounded-3xl border bg-card">
-          <div className="flex flex-col gap-6 p-6 sm:flex-row sm:items-center sm:p-8">
-            <DoctorPhoto doctor={doctor} className="size-28 shrink-0 rounded-2xl text-3xl" />
-            <div className="space-y-1.5">
-              <h1 className="text-3xl font-bold tracking-tight">{doctor.name}</h1>
-              <p className="flex items-center gap-2 font-medium text-primary">
-                <Stethoscope className="size-[18px]" aria-hidden /> {doctor.specialization}
-              </p>
-              {doctor.qualifications && (
-                <p className="flex items-center gap-2 text-sm text-muted-foreground">
-                  <GraduationCap className="size-[18px]" aria-hidden />
-                  <span className="sr-only">{t.profile.qualifications}: </span>
-                  {doctor.qualifications}
-                </p>
-              )}
-              <p className="flex items-center gap-2 text-sm text-muted-foreground">
-                <Building2 className="size-[18px]" aria-hidden /> {doctor.hospital}
-              </p>
+      <article className="mt-8 grid gap-10 lg:grid-cols-12 lg:gap-12">
+        <div className="relative lg:col-span-5">
+          <div className="absolute -right-4 -bottom-4 h-3/4 w-3/4 bg-coral sm:-right-6 sm:-bottom-6" aria-hidden />
+          <DoctorPhoto doctor={doctor} className="relative aspect-[4/5] w-full rounded-md text-6xl" />
+        </div>
+        <div className="space-y-8 lg:col-span-7 lg:pt-4">
+          <header className="space-y-4">
+            <p className="flex items-center gap-3 text-xs font-semibold tracking-[0.18em] text-slate-deep uppercase">
+              <span className="h-px w-10 bg-coral-deep" aria-hidden />
+              {doctor.specialization}
+            </p>
+            <h1 className="text-4xl leading-tight font-semibold tracking-tight text-slate-deep sm:text-5xl">{doctor.name}</h1>
+          </header>
+          <dl className="grid gap-4 border-y border-border py-6 sm:grid-cols-2">
+            <div className="flex gap-3">
+              <Stethoscope className="mt-0.5 size-5 shrink-0 text-teal" aria-hidden />
+              <div>
+                <dt className="text-xs text-muted-foreground">{t.directory.speciality}</dt>
+                <dd className="font-medium text-slate-deep">{doctor.specialization}</dd>
+              </div>
             </div>
-          </div>
-          <p className="mx-6 mb-6 rounded-2xl bg-muted p-5 text-sm leading-relaxed text-muted-foreground sm:mx-8 sm:mb-8">
+            <div className="flex gap-3">
+              <Building2 className="mt-0.5 size-5 shrink-0 text-teal" aria-hidden />
+              <div>
+                <dt className="text-xs text-muted-foreground">{network}</dt>
+                <dd className="font-medium text-slate-deep">{doctor.hospital}</dd>
+              </div>
+            </div>
+            {doctor.qualifications && (
+              <div className="flex gap-3 sm:col-span-2">
+                <GraduationCap className="mt-0.5 size-5 shrink-0 text-teal" aria-hidden />
+                <div>
+                  <dt className="text-xs text-muted-foreground">{t.profile.qualifications}</dt>
+                  <dd className="font-medium text-slate-deep">{doctor.qualifications}</dd>
+                </div>
+              </div>
+            )}
+          </dl>
+          <p className="max-w-2xl leading-relaxed text-muted-foreground">
             {t.profile.bio(doctor.name, doctor.specialization, doctor.hospital, network)}
           </p>
-        </section>
-        <aside className="h-fit space-y-4 rounded-3xl border bg-card p-6 sm:p-8">
-          <h2 className="text-lg font-semibold">{t.profile.see(doctor.name)}</h2>
-          <p className="text-sm text-muted-foreground">{t.profile.seeText}</p>
-          {site.contact.phone && (
-            <Button asChild size="lg" className="h-11 w-full rounded-full">
-              <a href={`tel:${site.contact.phone.replace(/[^\d+]/g, "")}`}>
-                <Phone aria-hidden /> {t.call} {site.contact.phone}
-              </a>
-            </Button>
-          )}
-          {hours && <p className="text-center text-xs text-muted-foreground">{hours}</p>}
-        </aside>
+          <aside className="space-y-4 rounded-md bg-ice p-6 sm:p-8">
+            <h2 className="text-lg font-semibold text-slate-deep">{t.profile.see(doctor.name)}</h2>
+            <p className="text-sm text-slate-deep/80">{t.profile.seeText}</p>
+            <div className="flex flex-wrap items-center gap-4">
+              {site.contact.phone && (
+                <Button asChild size="lg" className="h-11 rounded-md px-5 font-semibold">
+                  <a href={`tel:${site.contact.phone.replace(/[^\d+]/g, "")}`}>
+                    <Phone aria-hidden /> {t.call} {site.contact.phone}
+                  </a>
+                </Button>
+              )}
+              {hours && (
+                <p className="flex items-center gap-2 text-sm text-slate-deep/80">
+                  <Clock className="size-4" aria-hidden /> {hours}
+                </p>
+              )}
+            </div>
+          </aside>
+        </div>
       </article>
     </div>
   );

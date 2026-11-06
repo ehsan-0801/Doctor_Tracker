@@ -29,7 +29,7 @@ export function DoctorDirectory({ specializations }: { specializations: string[]
 
   return (
     <div className="space-y-6">
-      <div className="grid gap-3 rounded-2xl border bg-card p-4 sm:grid-cols-[1fr_260px] sm:items-end">
+      <div className="-mt-20 grid gap-3 rounded-md border bg-white p-4 shadow-[0_20px_40px_-28px_rgba(37,60,72,0.35)] sm:grid-cols-[1fr_260px] sm:items-end sm:p-5">
         <SearchInput
           label={d.searchLabel}
           placeholder={d.searchPlaceholder}
@@ -47,19 +47,21 @@ export function DoctorDirectory({ specializations }: { specializations: string[]
       </div>
 
       {doctors.error && !doctors.data ? (
-        <div className="rounded-2xl border bg-card">
+        <div className="rounded-md border bg-white">
           <ErrorState title={d.errorTitle} message={doctors.error.message} onRetry={() => doctors.refetch()} />
         </div>
       ) : doctors.isLoading ? (
-        <ul className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+        <ul className="grid grid-cols-2 gap-x-4 gap-y-8 sm:gap-x-6 sm:gap-y-10 lg:grid-cols-3 xl:grid-cols-4">
           {Array.from({ length: 8 }, (_, i) => (
-            <li key={i}>
-              <Skeleton className="h-80 rounded-2xl" />
+            <li key={i} className="space-y-3">
+              <Skeleton className="aspect-[4/5] rounded-md" />
+              <Skeleton className="h-4 w-1/3" />
+              <Skeleton className="h-5 w-2/3" />
             </li>
           ))}
         </ul>
       ) : doctors.data?.data.length === 0 ? (
-        <div className="rounded-2xl border bg-card">
+        <div className="rounded-md border bg-white">
           <EmptyState icon={Stethoscope} title={d.noMatch} description={d.noMatchHint} />
         </div>
       ) : (
@@ -67,14 +69,14 @@ export function DoctorDirectory({ specializations }: { specializations: string[]
           <p className="text-sm text-muted-foreground" aria-live="polite">
             {d.found(doctors.data?.pagination.total ?? 0)}
           </p>
-          <ul className={`grid gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 transition-opacity ${doctors.isFetching ? "opacity-60" : ""}`}>
+          <ul className={`grid grid-cols-2 gap-x-4 gap-y-8 sm:gap-x-6 sm:gap-y-10 lg:grid-cols-3 xl:grid-cols-4 transition-opacity ${doctors.isFetching ? "opacity-60" : ""}`}>
             {doctors.data?.data.map((doctor) => (
               <li key={doctor._id}>
                 <PublicDoctorCard doctor={doctor} />
               </li>
             ))}
           </ul>
-          <div className="overflow-hidden rounded-2xl border bg-card">
+          <div className="overflow-hidden rounded-md border bg-white">
             <Pagination
               pagination={doctors.data?.pagination}
               onPageChange={(next) => setFilters({ page: next })}
