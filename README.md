@@ -294,7 +294,7 @@ E2E_MONGODB_URI="mongodb+srv://…/doctor_tracker_e2e?retryWrites=true&w=majorit
 
 ## Media credits
 
-Demo avatars in `backend/seed-assets/avatars` are generated from [DiceBear](https://www.dicebear.com) "Notionists" by Zoish (CC0 1.0). With a valid `CLOUDINARY_URL`, the seed uploads them to `DocTrack/doctors` and `DocTrack/staff`.
+Demo staff portraits in `backend/seed-assets/photos` are from [Unsplash](https://unsplash.com) under the [Unsplash License](https://unsplash.com/license); photographers are listed in `seed-assets/photos/CREDITS.txt`. The people shown are stock models presented as fictional demo doctors and staff. With a valid `CLOUDINARY_URL`, the seed uploads them to `DocTrack/doctors` and `DocTrack/staff`.
 
 The hero and About videos (and their poster frames) are from [Mixkit](https://mixkit.co) under the Mixkit Stock Video Free License (commercial use allowed): "Clinic staff at a hospital reception" (#4766) and "Doctor wearing mask and gloves for protection" (#4745). The DocTrack logo and favicon are original SVGs in this repository.
 

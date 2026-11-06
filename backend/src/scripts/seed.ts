@@ -8,9 +8,10 @@
  * The admin is created from ADMIN_EMAIL / ADMIN_PASSWORD. Without --reset an
  * existing admin's password is never overwritten.
  *
- * When CLOUDINARY_URL is valid, avatars in seed-assets/avatars (DiceBear
- * "Notionists" by Zoish, CC0 1.0) are uploaded to DocTrack/doctors and
- * DocTrack/staff and attached to doctors and accounts; otherwise photos are skipped.
+ * When CLOUDINARY_URL is valid, portraits in seed-assets/photos (Unsplash
+ * License; see seed-assets/photos/CREDITS.txt) are uploaded to DocTrack/doctors
+ * and DocTrack/staff and attached to doctors and accounts; otherwise photos are
+ * skipped. The people shown are stock models presented as fictional demo staff.
  *
  * Demo data also creates one account per role, all using ADMIN_PASSWORD:
  *   management@doctortracker.com, staff@doctortracker.com, and a doctor login
@@ -39,15 +40,15 @@ const seedEnv = z
 
 const args = new Set(process.argv.slice(2));
 const PATIENT_COUNT = 60;
-const AVATAR_DIR = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../seed-assets/avatars");
+const PHOTO_DIR = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../seed-assets/photos");
 const slugify = (name: string) => name.replace(/^Dr\.\s*/, "").toLowerCase().replace(/[^a-z]+/g, "-").replace(/^-|-$/g, "");
 
 /**
- * Uploads seed avatars to Cloudinary once per run (fixed public ids, so reruns
+ * Uploads seed portraits to Cloudinary once per run (fixed public ids, so reruns
  * overwrite instead of duplicating). Returns slug -> https URL, or an empty map
  * when Cloudinary is not configured or rejects the credentials.
  */
-async function uploadAvatars(entries: { slug: string; folder: "DocTrack/doctors" | "DocTrack/staff" }[]) {
+async function uploadPhotos(entries: { slug: string; folder: "DocTrack/doctors" | "DocTrack/staff" }[]) {
   const urls = new Map<string, string>();
   const cloudinary = parseCloudinaryUrl(seedEnv.CLOUDINARY_URL);
   if (!cloudinary) {
@@ -57,7 +58,7 @@ async function uploadAvatars(entries: { slug: string; folder: "DocTrack/doctors"
   for (const { slug, folder } of entries) {
     const params = { folder, overwrite: "true", public_id: slug, timestamp: Math.floor(Date.now() / 1000) };
     const form = new FormData();
-    form.append("file", new Blob([await readFile(path.join(AVATAR_DIR, `${slug}.png`))], { type: "image/png" }), `${slug}.png`);
+    form.append("file", new Blob([await readFile(path.join(PHOTO_DIR, `${slug}.jpg`))], { type: "image/jpeg" }), `${slug}.jpg`);
     for (const [key, value] of Object.entries(params)) form.append(key, String(value));
     form.append("api_key", cloudinary.apiKey);
     form.append("signature", signParams(params, cloudinary.apiSecret));
@@ -205,7 +206,7 @@ async function seedDemoData(photos: Map<string, string>) {
 async function main() {
   await connectDatabase(seedEnv.MONGODB_URI);
   await Promise.all([User.syncIndexes(), Doctor.syncIndexes(), Patient.syncIndexes()]);
-  const photos = await uploadAvatars([
+  const photos = await uploadPhotos([
     ...DOCTORS.map(([name]) => ({ slug: slugify(name), folder: "DocTrack/doctors" as const })),
     ...["administrator", "morgan-lee", "sam-rivera"].map((slug) => ({ slug, folder: "DocTrack/staff" as const })),
   ]);
