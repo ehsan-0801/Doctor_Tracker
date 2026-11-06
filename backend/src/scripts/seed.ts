@@ -34,6 +34,9 @@ import { Conversation, Message } from "../models/Chat.js";
 import { Location } from "../models/Location.js";
 import { Presence, PresenceEvent } from "../models/Presence.js";
 import { hashPassword } from "../services/auth.service.js";
+import { issueAccessToken } from "../services/patient.service.js";
+
+const DEMO_PATIENT_TOKEN = "DEMO-CARE-2026";
 
 const seedEnv = z
   .object({
@@ -304,8 +307,12 @@ async function seedDemoData(photos: Map<string, string>) {
       updatedAt: createdAt,
     });
   }
-  await Patient.insertMany(patients, { timestamps: false });
+  const created = await Patient.insertMany(patients, { timestamps: false });
   console.log(`Created ${doctors.length} doctors and ${patients.length} patients`);
+  // One patient gets a known token so the public status page can be demoed.
+  const demoPatient = created.find((p) => p.doctorId) ?? created[0]!;
+  await issueAccessToken(demoPatient._id.toString(), DEMO_PATIENT_TOKEN);
+  console.log(`Patient status demo: name "${demoPatient.name}", token ${DEMO_PATIENT_TOKEN}`);
   await seedDemoUsers(doctors, photos);
   await seedTracking();
 }

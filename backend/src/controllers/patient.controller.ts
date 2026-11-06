@@ -42,3 +42,19 @@ export async function remove(req: Request, res: Response) {
 export async function conditions(_req: Request, res: Response) {
   sendSuccess(res, "Conditions retrieved successfully", await patientService.listConditions());
 }
+
+export async function issueAccessToken(req: Request, res: Response) {
+  const { id } = idParamsSchema.parse(req.params);
+  const { token, issuedAt, patientName } = await patientService.issueAccessToken(id);
+  await recordAudit(req, currentUser(res), { action: "patient.token_issue", entityType: "patient", entityId: id, entityLabel: patientName });
+  // The plain token is shown once; keep it out of every cache.
+  res.set("Cache-Control", "no-store");
+  sendSuccess(res, "Access token issued", { token, issuedAt }, { status: 201 });
+}
+
+export async function revokeAccessToken(req: Request, res: Response) {
+  const { id } = idParamsSchema.parse(req.params);
+  const patient = await patientService.revokeAccessToken(id);
+  await recordAudit(req, currentUser(res), { action: "patient.token_revoke", entityType: "patient", entityId: id, entityLabel: patient.name });
+  sendSuccess(res, "Access token revoked", null);
+}

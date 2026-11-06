@@ -45,6 +45,8 @@ export const patientsApi = {
     api.patch<Patient>(`/patients/${id}`, values),
   delete: (id: string) => api.delete<null>(`/patients/${id}`),
   conditions: () => api.get<string[]>("/patients/conditions"),
+  issueAccessToken: (id: string) => api.post<import("@/types/api").IssuedAccessToken>(`/patients/${id}/access-token`),
+  revokeAccessToken: (id: string) => api.delete<null>(`/patients/${id}/access-token`),
 };
 
 export const dashboardApi = {
@@ -76,6 +78,8 @@ export const publicApi = {
   site: () => api.get<import("@/types/site").PublicSite>("/public/site"),
   doctors: (params: { page?: number; search?: string; specialization?: string }) =>
     api.list<import("@/types/site").PublicDoctor>("/public/doctors", { ...params, limit: 12 }),
+  patientStatus: (values: { name: string; token: string }) =>
+    api.post<import("@/types/site").PatientStatus>("/public/patient-status", values, { skipAuthRedirect: true }),
 };
 
 export const settingsApi = {

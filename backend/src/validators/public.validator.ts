@@ -7,3 +7,8 @@ export const publicDoctorQuerySchema = z.object({
   search: optionalTrimmed(80),
   specialization: optionalTrimmed(120),
 });
+
+export const patientStatusSchema = z.object({
+  name: z.string().trim().min(2, "Enter your full name").max(120),
+  token: z.string().trim().min(8, "Enter the token from your hospital card").max(40),
+});

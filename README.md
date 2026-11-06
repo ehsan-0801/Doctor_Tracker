@@ -40,6 +40,7 @@
 - **Real-time chat**: one-to-one messages between doctors and their assigned staff; admins can message anyone. Includes unread counts, online status, emoji, and photo or document attachments up to 10 MB. Chat is available as a floating widget on every portal page.
 - **Notifications**: a bell with an unread count, plus pop-ups for new messages, patient assignments, status changes made on your behalf, and staff assignments.
 - **Audit log** (admin): every sign-in (including failed attempts), sign-out and change, with who, when, what changed, IP address and browser. Searchable and filterable, it updates live; secrets are never stored.
+- **Patient status check**: the front desk issues each patient a unique access token (shown once, stored only as a SHA-256 hash). On the public `/check-status` page, the patient enters their full name and token to see their current condition and assigned doctor. No account is needed. Failed checks are rate-limited, a wrong name and a wrong token get the same answer, and issuing a new token disables the old one.
 - **Dark mode** for the portal, and site settings that admins can edit without a deploy.
 
 ## Requirement coverage
@@ -302,6 +303,8 @@ The seed creates 15 doctors, 60 patients, rooms on two floors, live statuses and
 | Front desk (staff) | `staff@doctortracker.com` |
 | Doctor | each doctor's own email, for example `amelia.hart@example.com` |
 
+The seed also gives one patient the status-check token `DEMO-CARE-2026` and prints that patient's name. Use both on `/check-status`.
+
 ### Commands
 
 | Location | Command | Purpose |
@@ -351,6 +354,7 @@ Errors use `{ "success": false, "message": "...", "errors": [{ "field": "email",
 | GET | `/api/patients/:id` | Patient details |
 | PATCH | `/api/patients/:id` | Update `name`, `condition` and/or `doctorId` |
 | DELETE | `/api/patients/:id` | Delete patient (admin) |
+| POST / DELETE | `/api/patients/:id/access-token` | Issue (returned once) or revoke a patient's status-check token (admin, staff) |
 | GET | `/api/dashboard/stats` | Totals, average per doctor, 30-day counts |
 | GET | `/api/dashboard/patients-per-doctor` | Top doctors by patient count (`limit`) |
 | GET | `/api/dashboard/registrations` | Patients created per month (`months` ≤36) |
@@ -360,6 +364,7 @@ Errors use `{ "success": false, "message": "...", "errors": [{ "field": "email",
 | POST | `/api/users/:id/reset-password` | Set a new password and revoke the user's sessions (admin) |
 | GET / PUT | `/api/settings` | Read / update public site settings (admin) |
 | GET | `/api/public/site`, `/api/public/doctors`, `/api/public/doctors/:id` | Public website data (no session) |
+| POST | `/api/public/patient-status` | A patient's current condition and doctor for a matching `name` and `token` (no session; 10 failed attempts per 15 minutes) |
 | POST | `/api/uploads/signature` | Signed Cloudinary upload for photos (admin) |
 | GET | `/api/realtime/token` | 2-minute WebSocket token |
 | GET | `/api/locations` | Rooms and floors |
@@ -390,7 +395,7 @@ cd backend
 npm test
 ```
 
-92 integration tests run against an **in-memory MongoDB** (`mongodb-memory-server`), so they need no Atlas access and never touch real data. They cover:
+98 integration tests run against an **in-memory MongoDB** (`mongodb-memory-server`), so they need no Atlas access and never touch real data. They cover:
 - **Authentication:** validation, generic errors, httpOnly cookie, hashed session tokens, logout revocation, expired sessions.
 - **Role access** for every capability.
 - **Doctors:** create, duplicates, regex-escaped search, filters, date ranges, sorting, pagination, patient counts, invalid ids, profile updates.
@@ -401,6 +406,7 @@ npm test
 - **Real-time delivery** over a real WebSocket.
 - **Audit log:** recorded actions, secret redaction, admin-only access.
 - **Notifications.**
+- **Patient status tokens:** hashed storage, name and token matching, identical errors, replacement and revocation, role access.
 
 ### End-to-end (Playwright)
 
@@ -410,7 +416,7 @@ npx playwright install chromium        # once (or set PLAYWRIGHT_CHANNEL=chrome 
 E2E_MONGODB_URI="mongodb+srv://…/doctor_tracker_e2e?retryWrites=true&w=majority" npm run test:e2e
 ```
 
-17 browser tests (desktop 1440×900 and mobile 375×812) start the real API (port 4100) and a production build of the frontend (port 3100). The run **resets and seeds** the database in `E2E_MONGODB_URI`, so it refuses any database whose name does not contain `e2e` or `test`. Covered flows:
+19 browser tests (desktop 1440×900 and mobile 375×812) start the real API (port 4100) and a production build of the frontend (port 3100). The run **resets and seeds** the database in `E2E_MONGODB_URI`, so it refuses any database whose name does not contain `e2e` or `test`. Covered flows:
 - **Sign-in:** redirects and errors, password visibility, sign-out.
 - **Dashboard:** totals and period selector.
 - **Doctors:** search, sort, filter, pagination, add with duplicate handling, details with breadcrumbs.
@@ -418,6 +424,7 @@ E2E_MONGODB_URI="mongodb+srv://…/doctor_tracker_e2e?retryWrites=true&w=majorit
 - **Mobile:** card lists, the navigation drawer and filters.
 - **Audit log** and a live notification delivered to a second signed-in user.
 - **Chat:** emoji, photo and document messages (Cloudinary is stubbed in the browser), and the chat widget across pages.
+- **Patient status:** staff issue a token, and a signed-out patient checks their condition with it.
 
 ## Visual evidence
 
@@ -483,7 +490,7 @@ DocTrack is built for a single hospital organization; it is not multi-tenant. Do
 
 Planned next steps:
 
-1. **Patient portal**: patients sign in with a username and a secret access token to see their own record.
+1. **Patient portal**: extend the status check into a full patient view with history and live updates.
 2. **Condition timeline**: a dated history of each patient's condition, written by their doctor and visible to the patient.
 3. **Appointments**: booking from the public doctor profile or the front desk, with availability that follows the doctor's live status.
 4. **Exports**: CSV/PDF for patient and doctor lists, the audit log and dashboard reports, plus chart drill-down into filtered lists.

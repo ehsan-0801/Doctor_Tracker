@@ -45,6 +45,15 @@ export interface PublicDoctor {
   photoUrl?: string;
 }
 
+/** What a patient sees after checking their name and token. */
+export interface PatientStatus {
+  name: string;
+  condition: string;
+  doctor: PublicDoctor | null;
+  registeredAt: string;
+  updatedAt: string;
+}
+
 export interface PublicSite extends SiteContentBn {
   hospitalName: string;
   tagline: string;

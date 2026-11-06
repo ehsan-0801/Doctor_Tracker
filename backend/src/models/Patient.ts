@@ -7,6 +7,10 @@ const patientSchema = new Schema(
     // A patient belongs to at most one doctor. `null` means the patient was
     // removed from a doctor's list and is currently unassigned.
     doctorId: { type: Schema.Types.ObjectId, ref: "Doctor", default: null },
+    // Status-check token handed to the patient at the front desk. Only its
+    // SHA-256 hash is stored; issuing a new token replaces the old one.
+    accessTokenHash: { type: String, select: false },
+    accessTokenIssuedAt: { type: Date, default: null },
   },
   { timestamps: true },
 );
@@ -19,6 +23,9 @@ patientSchema.index({ doctorId: 1, createdAt: -1 });
 // canonical-condition lookups use the index.
 patientSchema.index({ condition: 1, createdAt: -1 });
 patientSchema.index({ condition: 1 }, { name: "condition_ci", collation: { locale: "en", strength: 2 } });
+
+// Public status lookup by token; unique so a token identifies one patient.
+patientSchema.index({ accessTokenHash: 1 }, { unique: true, partialFilterExpression: { accessTokenHash: { $type: "string" } } });
 
 export type PatientDocument = InferSchemaType<typeof patientSchema>;
 export const Patient = model("Patient", patientSchema);

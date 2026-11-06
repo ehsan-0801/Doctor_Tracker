@@ -13,6 +13,7 @@ import { LanguageToggle } from "./language-toggle";
 const LINKS = [
   { key: "home", href: "/", section: null },
   { key: "findDoctor", href: "/find-a-doctor", section: null },
+  { key: "status", href: "/check-status", section: null },
   { key: "services", href: "/#services", section: "services" },
   { key: "about", href: "/#about", section: "about" },
   { key: "contact", href: "/#contact", section: "contact" },
@@ -54,7 +55,9 @@ export function SiteHeader({ emergencyPhone }: { emergencyPhone: string }) {
       ? ((LINKS.find((l) => l.section === section)?.key as LinkKey | undefined) ?? "home")
       : pathname.startsWith("/find-a-doctor")
         ? "findDoctor"
-        : null;
+        : pathname.startsWith("/check-status")
+          ? "status"
+          : null;
 
   // Sliding active-link indicator, positioned directly on the DOM node (no re-render).
   const navRef = useRef<HTMLDivElement>(null);

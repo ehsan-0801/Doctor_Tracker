@@ -1,3 +1,4 @@
+import { createHash, randomInt } from "node:crypto";
 import { Types, type QueryFilter } from "mongoose";
 import { normalizeCondition, PRESET_CONDITIONS } from "../constants/conditions.js";
 import { Patient, type PatientDocument } from "../models/Patient.js";
@@ -10,6 +11,7 @@ import { doctorUserIds, notify } from "./notification.service.js";
 
 const CASE_INSENSITIVE = { locale: "en", strength: 2 } as const;
 const DOCTOR_FIELDS = "name specialization hospital";
+const PATIENT_FIELDS = "name condition doctorId accessTokenIssuedAt createdAt updatedAt";
 
 /**
  * Resolve a condition to its canonical spelling: a preset, an existing stored
@@ -47,7 +49,7 @@ export async function listPatients(query: PatientListQuery, doctorId?: string) {
 
   const [patients, total] = await Promise.all([
     Patient.find(filter)
-      .select("name condition doctorId createdAt updatedAt")
+      .select(PATIENT_FIELDS)
       .sort(sort)
       .skip((query.page - 1) * query.limit)
       .limit(query.limit)
@@ -63,7 +65,7 @@ export async function listPatients(query: PatientListQuery, doctorId?: string) {
 
 export async function getPatientById(id: string) {
   const patient = await Patient.findById(id)
-    .select("name condition doctorId createdAt updatedAt")
+    .select(PATIENT_FIELDS)
     .populate({ path: "doctorId", select: DOCTOR_FIELDS })
     .lean();
   if (!patient) throw ApiError.notFound("Patient not found");
@@ -138,4 +140,56 @@ export async function listConditions(): Promise<string[]> {
     if (!merged.has(key)) merged.set(key, value);
   }
   return [...merged.values()].sort((a, b) => a.localeCompare(b));
+}
+
+// Unambiguous characters only (no 0/O, 1/I/L), so a token read aloud or copied
+// from paper is typed correctly. 12 characters ≈ 59 bits.
+const TOKEN_ALPHABET = "ABCDEFGHJKMNPQRSTUVWXYZ23456789";
+const TOKEN_LENGTH = 12;
+
+/** Case, spaces and dashes do not matter when a patient types their token. */
+const normalizeToken = (token: string) => token.toUpperCase().replace(/[^A-Z0-9]/g, "");
+const hashAccessToken = (token: string) => createHash("sha256").update(normalizeToken(token)).digest("hex");
+const normalizeName = (name: string) => name.trim().replace(/\s+/g, " ").toLocaleLowerCase("en");
+
+function generateAccessToken() {
+  const chars = Array.from({ length: TOKEN_LENGTH }, () => TOKEN_ALPHABET[randomInt(TOKEN_ALPHABET.length)]).join("");
+  return chars.match(/.{4}/g)!.join("-");
+}
+
+/**
+ * Issues a new status-check token, replacing any previous one. The plain token
+ * is returned once and never stored.
+ */
+export async function issueAccessToken(id: string, token = generateAccessToken()) {
+  const issuedAt = new Date();
+  const patient = await Patient.findByIdAndUpdate(id, { accessTokenHash: hashAccessToken(token), accessTokenIssuedAt: issuedAt }, { timestamps: false })
+    .select("name")
+    .lean();
+  if (!patient) throw ApiError.notFound("Patient not found");
+  return { token, issuedAt, patientName: patient.name };
+}
+
+export async function revokeAccessToken(id: string) {
+  const patient = await Patient.findByIdAndUpdate(id, { $unset: { accessTokenHash: 1 }, accessTokenIssuedAt: null }, { timestamps: false })
+    .select("name")
+    .lean();
+  if (!patient) throw ApiError.notFound("Patient not found");
+  return patient;
+}
+
+/**
+ * Public status check: the token must match and the name must be the
+ * patient's own. Both failures give the same answer so neither can be probed.
+ */
+export async function findPatientStatus(name: string, token: string) {
+  const patient = await Patient.findOne({ accessTokenHash: hashAccessToken(token) })
+    .select("name condition doctorId createdAt updatedAt")
+    .populate({ path: "doctorId", select: "name specialization hospital photoUrl" })
+    .lean();
+  if (!patient || normalizeName(patient.name) !== normalizeName(name)) {
+    throw ApiError.notFound("No record matches that name and token. Check both and try again.");
+  }
+  const { doctorId: doctor, name: patientName, condition, createdAt, updatedAt } = patient;
+  return { name: patientName, condition, doctor: doctor ?? null, registeredAt: createdAt, updatedAt };
 }

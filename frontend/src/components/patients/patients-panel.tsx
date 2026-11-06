@@ -3,7 +3,7 @@
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { MoreHorizontal, Pencil, Trash2, UserMinus, Users } from "lucide-react";
+import { KeyRound, MoreHorizontal, Pencil, Trash2, UserMinus, Users } from "lucide-react";
 import { DataTable, type Column } from "@/components/shared/data-table";
 import { DateRangeFilter } from "@/components/shared/date-range-filter";
 import { FilterBar } from "@/components/shared/filter-bar";
@@ -31,6 +31,7 @@ import { formatDate } from "@/lib/format";
 import type { DoctorSummary, Patient, PatientListParams } from "@/types/api";
 import { DoctorCombobox, type DoctorChoice } from "./doctor-combobox";
 import { PatientFormDialog } from "./patient-form-dialog";
+import { PatientTokenDialog } from "./patient-token-dialog";
 import { usePatientMutations } from "./use-patient-mutations";
 
 const PAGE_SIZE = 10;
@@ -42,6 +43,7 @@ const UNASSIGNED: DoctorChoice = { _id: "unassigned", name: "Unassigned" };
 
 type Pending =
   | { kind: "edit"; patient: Patient }
+  | { kind: "token"; patient: Patient }
   | { kind: "delete"; patient: Patient }
   | { kind: "unassign"; patient: Patient }
   | null;
@@ -101,6 +103,11 @@ export function PatientsPanel({ doctor }: { doctor?: DoctorSummary }) {
         {canEdit && (
           <DropdownMenuItem onSelect={() => setPending({ kind: "edit", patient })}>
             <Pencil aria-hidden /> Edit patient
+          </DropdownMenuItem>
+        )}
+        {canEdit && (
+          <DropdownMenuItem onSelect={() => setPending({ kind: "token", patient })}>
+            <KeyRound aria-hidden /> Status-check token
           </DropdownMenuItem>
         )}
         {doctor && canAssign && (
@@ -246,6 +253,8 @@ export function PatientsPanel({ doctor }: { doctor?: DoctorSummary }) {
       {pending?.kind === "edit" && (
         <PatientFormDialog open onOpenChange={(open) => !open && setPending(null)} mode={{ kind: "edit", patient: pending.patient }} />
       )}
+
+      {pending?.kind === "token" && <PatientTokenDialog patient={pending.patient} onClose={() => setPending(null)} />}
 
       <ConfirmDialog
         open={pending?.kind === "delete"}

@@ -77,8 +77,15 @@ export interface Patient {
   name: string;
   condition: string;
   doctor: DoctorSummary | null;
+  /** When the current status-check token was issued; null when none is active. */
+  accessTokenIssuedAt?: string | null;
   createdAt: string;
   updatedAt: string;
+}
+
+export interface IssuedAccessToken {
+  token: string;
+  issuedAt: string;
 }
 
 export interface DoctorFilterOptions {
