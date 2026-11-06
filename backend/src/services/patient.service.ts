@@ -6,6 +6,7 @@ import { containsPattern, dateRangeFilter } from "../utils/query.js";
 import { buildPagination } from "../utils/response.js";
 import type { PatientListQuery, UpdatePatientInput } from "../validators/patient.validator.js";
 import { assertDoctorExists } from "./doctor.service.js";
+import { doctorUserIds, notify } from "./notification.service.js";
 
 const CASE_INSENSITIVE = { locale: "en", strength: 2 } as const;
 const DOCTOR_FIELDS = "name specialization hospital";
@@ -77,6 +78,12 @@ export async function createPatient(input: { name: string; condition: string; do
     condition: await canonicalCondition(input.condition),
     doctorId: input.doctorId,
   });
+  await notify(await doctorUserIds(input.doctorId), {
+    type: "patient_assigned",
+    title: "New patient assigned",
+    body: `${patient.name} (${patient.condition}) was added to your patients.`,
+    link: "/doctor",
+  });
   return getPatientById(patient._id.toString());
 }
 
@@ -88,8 +95,18 @@ export async function updatePatient(id: string, input: UpdatePatientInput) {
   if (input.condition !== undefined) update.condition = await canonicalCondition(input.condition);
   if (input.doctorId !== undefined) update.doctorId = input.doctorId;
 
-  const updated = await Patient.findByIdAndUpdate(id, update, { runValidators: true }).select("_id").lean();
-  if (!updated) throw ApiError.notFound("Patient not found");
+  const previous = await Patient.findByIdAndUpdate(id, update, { runValidators: true }).select("name doctorId").lean();
+  if (!previous) throw ApiError.notFound("Patient not found");
+
+  // Tell doctors when a patient moves onto or off their list.
+  const before = previous.doctorId?.toString() ?? null;
+  if (input.doctorId !== undefined && input.doctorId !== before) {
+    const name = update.name ?? previous.name;
+    await Promise.all([
+      notify(await doctorUserIds(before), { type: "patient_unassigned", title: "Patient reassigned", body: `${name} is no longer on your list.`, link: "/doctor" }),
+      notify(await doctorUserIds(input.doctorId), { type: "patient_assigned", title: "New patient assigned", body: `${name} was added to your patients.`, link: "/doctor" }),
+    ]);
+  }
   return getPatientById(id);
 }
 
@@ -107,7 +124,9 @@ export async function unassignPatient(doctorId: string, patientId: string) {
     .select("_id")
     .lean();
   if (!updated) throw ApiError.notFound("Patient is not associated with this doctor");
-  return getPatientById(patientId);
+  const patient = await getPatientById(patientId);
+  await notify(await doctorUserIds(doctorId), { type: "patient_unassigned", title: "Patient removed from your list", body: `${patient.name} was removed from your patients.`, link: "/doctor" });
+  return patient;
 }
 
 /** Presets plus every condition stored in the database, for filters and form suggestions. */

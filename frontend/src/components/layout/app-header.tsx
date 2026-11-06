@@ -18,6 +18,7 @@ import { Brand } from "./brand";
 import { MobileNav } from "./mobile-nav";
 import { ThemeToggle } from "./theme-toggle";
 import { MyStatusButton } from "@/components/tracking/my-status-button";
+import { NotificationBell } from "@/components/notifications/notification-bell";
 import { isActivePath, NAV_ITEMS } from "./nav-items";
 import { useLogout } from "./use-logout";
 
@@ -36,6 +37,7 @@ export function AppHeader() {
 
       <div className="ml-auto flex items-center gap-1">
         <MyStatusButton />
+        <NotificationBell />
         <ThemeToggle />
         <DropdownMenu>
           <DropdownMenuTrigger

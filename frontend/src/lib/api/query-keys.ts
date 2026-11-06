@@ -21,6 +21,12 @@ export const queryKeys = {
   publicDoctors: (params: object) => ["public-doctors", params] as const,
   settings: ["settings"] as const,
   locations: ["locations"] as const,
+  notifications: ["notifications"] as const,
+  audit: {
+    all: ["audit"] as const,
+    list: (params: object) => ["audit", "list", params] as const,
+    facets: ["audit", "facets"] as const,
+  },
   presence: ["presence"] as const,
   presenceHistory: (userId: string) => ["presence", "history", userId] as const,
   chat: {

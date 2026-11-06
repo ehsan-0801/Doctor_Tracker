@@ -6,6 +6,8 @@ import { SiteSettings } from "../src/models/SiteSettings.js";
 import { Location } from "../src/models/Location.js";
 import { Presence, PresenceEvent } from "../src/models/Presence.js";
 import { Conversation, Message } from "../src/models/Chat.js";
+import { AuditEvent } from "../src/models/Audit.js";
+import { Notification } from "../src/models/Notification.js";
 
-export const all = [User, Session, Doctor, Patient, SiteSettings, Location, Presence, PresenceEvent, Conversation, Message] as const;
-export { Conversation, Doctor, Location, Message, Patient, Presence, PresenceEvent, Session, User };
+export const all = [User, Session, Doctor, Patient, SiteSettings, Location, Presence, PresenceEvent, Conversation, Message, AuditEvent, Notification] as const;
+export { AuditEvent, Conversation, Doctor, Notification, Location, Message, Patient, Presence, PresenceEvent, Session, User };

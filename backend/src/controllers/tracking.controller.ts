@@ -4,6 +4,7 @@ import { createRealtimeToken } from "../realtime/server.js";
 import * as chatService from "../services/chat.service.js";
 import * as locationService from "../services/location.service.js";
 import * as presenceService from "../services/presence.service.js";
+import { recordAudit } from "../services/audit.service.js";
 import { sendSuccess } from "../utils/response.js";
 import { idParamsSchema } from "../validators/common.js";
 import {
@@ -27,15 +28,22 @@ export async function listLocations(_req: Request, res: Response) {
   sendSuccess(res, "Locations retrieved successfully", await locationService.listLocations());
 }
 export async function createLocation(req: Request, res: Response) {
-  sendSuccess(res, "Location created", await locationService.createLocation(locationSchema.parse(req.body)), { status: 201 });
+  const input = locationSchema.parse(req.body);
+  const location = await locationService.createLocation(input);
+  await recordAudit(req, currentUser(res), { action: "location.create", entityType: "location", entityId: String(location?._id), entityLabel: input.name, changes: input });
+  sendSuccess(res, "Location created", location, { status: 201 });
 }
 export async function updateLocation(req: Request, res: Response) {
   const { id } = idParamsSchema.parse(req.params);
-  sendSuccess(res, "Location updated", await locationService.updateLocation(id, updateLocationSchema.parse(req.body)));
+  const input = updateLocationSchema.parse(req.body);
+  const location = await locationService.updateLocation(id, input);
+  await recordAudit(req, currentUser(res), { action: "location.update", entityType: "location", entityId: id, entityLabel: location.name, changes: input });
+  sendSuccess(res, "Location updated", location);
 }
 export async function deleteLocation(req: Request, res: Response) {
   const { id } = idParamsSchema.parse(req.params);
   await locationService.deleteLocation(id);
+  await recordAudit(req, currentUser(res), { action: "location.delete", entityType: "location", entityId: id });
   sendSuccess(res, "Location deleted", null);
 }
 
@@ -45,7 +53,14 @@ export async function listPresence(_req: Request, res: Response) {
 }
 export async function setPresence(req: Request, res: Response) {
   const { userId } = userIdParamsSchema.parse(req.params);
-  sendSuccess(res, "Location updated", await presenceService.setPresence(currentUser(res), userId, setPresenceSchema.parse(req.body)));
+  const actor = currentUser(res);
+  const input = setPresenceSchema.parse(req.body);
+  const view = await presenceService.setPresence(actor, userId, input);
+  // Self check-ins are routine (kept in the movement history); log changes made for someone else.
+  if (userId !== actor.id) {
+    await recordAudit(req, actor, { action: "presence.update", entityType: "user", entityId: userId, entityLabel: view.name, changes: { status: input.status, location: view.location?.code ?? null, note: input.note } });
+  }
+  sendSuccess(res, "Location updated", view);
 }
 export async function presenceHistory(req: Request, res: Response) {
   const { userId } = userIdParamsSchema.parse(req.params);

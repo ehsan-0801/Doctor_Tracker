@@ -18,6 +18,7 @@ const PERMISSIONS = {
   "settings:manage": ["admin"],
   "locations:manage": ["admin"],
   "tracking:all": ["admin"],
+  "audit:read": ["admin"],
 } as const satisfies Record<string, readonly Role[]>;
 
 export type Permission = keyof typeof PERMISSIONS;

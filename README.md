@@ -11,6 +11,8 @@
 - **Public website** – homepage with a video hero, live network statistics (refreshed every 30 s from the database), services, featured doctors, about and contact sections, plus a searchable **Find a doctor** directory and public doctor profiles. All content is editable by administrators in **Site settings**; only public doctor fields (name, specialization, hospital) are exposed.
 - **Live tracking** – real-time 3D hospital map (React Three Fiber) showing where doctors and staff are (operating theatre, ICU, wards, consultation rooms…) with status (available, busy, in surgery, on break, off duty). People check themselves in; assigned staff can update their doctors; admins see everyone and a 30-day movement history, other roles see doctors only. Admins manage floors and rooms on the **Locations** page.
 - **Real-time chat** – one-to-one messages between each doctor and their assigned staff; admins can message anyone. Unread counts, online status and instant delivery over WebSockets (Socket.IO).
+- **Real-time notifications** – every portal has a notification bell with an unread badge, plus a toast as events happen: new messages, patients assigned to or removed from a doctor, a status or location changed on your behalf, and doctors newly assigned to a staff member. Notifications are kept for 90 days.
+- **Audit log** (admins) – every sign-in (including failed attempts), sign-out and change to doctors, patients, users, rooms, site settings and on-behalf status updates is recorded with who, when, what changed, IP address and browser. Search and filter by action, area and date; new entries appear live. Passwords, tokens and secrets are never stored, and entries expire after 180 days.
 - **Roles** – Administrator, Management, Front desk (staff) and Doctor, enforced by capability permissions on every API route; menus and actions adapt to the signed-in role. Administrators manage accounts on the **Users** page.
 - **Authentication** – administrator login with hashed passwords, server-side sessions in an `httpOnly` cookie, logout that revokes the session, rate-limited sign-in, protected pages and APIs.
 - **Dashboard** – total doctors, total patients, average patients per doctor, new patients in the last 30 days (with trend), patients-per-doctor chart, monthly registration chart (6/12/24-month period), patients-by-condition chart, recently added patients. All numbers are computed in MongoDB.
@@ -89,6 +91,8 @@ Doctor   { name, specialization, hospital, phone, email (unique), createdAt, upd
 Patient  { name, condition, doctorId → Doctor | null, createdAt, updatedAt }
 Admin    { email (unique), passwordHash (never selected by default), createdAt, updatedAt }
 Session  { tokenHash (unique), adminId, expiresAt (TTL index) }
+AuditEvent   { action, actorId, actorName, actorRole, entityType, entityId, entityLabel, changes, ip, userAgent, createdAt (TTL 180 days) }
+Notification { userId, type, title, body, link, read, createdAt (TTL 90 days) }
 ```
 
 A patient belongs to **at most one doctor**. Removing a patient from a doctor sets `doctorId` to `null`: the record stays in the global directory as *Unassigned* and can be reassigned by editing it. Creating a patient always requires an existing doctor, and every doctor reference is checked before it is written.
@@ -241,6 +245,11 @@ Errors use `{ "success": false, "message": "...", "errors": [{ "field": "email",
 | GET | `/api/dashboard/patients-per-doctor` | Top doctors by patient count (`limit`) |
 | GET | `/api/dashboard/registrations` | Patients created per month (`months` ≤36) |
 | GET | `/api/dashboard/conditions` | Patients per condition, top N plus "Other" (`limit`) |
+| GET | `/api/audit` | Audit entries, newest first (admin). Query: `page`, `limit` (≤100), `search`, `action`, `entityType`, `actorId`, `startDate`, `endDate` |
+| GET | `/api/audit/facets` | Recorded actions and areas for the filters (admin) |
+| GET | `/api/notifications` | The signed-in user's notifications with unread count (`limit`, `before`) |
+| POST | `/api/notifications/:id/read` | Mark one notification read |
+| POST | `/api/notifications/read-all` | Mark all notifications read |
 
 Date statistics always use the record's `createdAt` (registration date).
 
@@ -253,7 +262,7 @@ cd backend
 npm test
 ```
 
-42 integration tests run against an **in-memory MongoDB** (`mongodb-memory-server`), so they need no Atlas access and never touch real data. They cover authentication (validation, generic errors, httpOnly cookie, hashed session tokens, logout revocation, expired sessions), doctors (create, duplicates, search with regex escaping, filters, date ranges, sorting, pagination, patient counts, invalid ids), patients (doctor association, unassign without delete, condition canonicalization, filters, reassignment, invalid references, delete, NoSQL-operator injection) and dashboard aggregations.
+91 integration tests run against an **in-memory MongoDB** (`mongodb-memory-server`), so they need no Atlas access and never touch real data. They cover authentication (validation, generic errors, httpOnly cookie, hashed session tokens, logout revocation, expired sessions), doctors (create, duplicates, search with regex escaping, filters, date ranges, sorting, pagination, patient counts, invalid ids), patients (doctor association, unassign without delete, condition canonicalization, filters, reassignment, invalid references, delete, NoSQL-operator injection) dashboard aggregations, the audit log (recorded actions, secret redaction, admin-only access, filters) and notifications (per-user scoping, read state).
 
 ### End-to-end (Playwright)
 
@@ -263,7 +272,7 @@ npx playwright install chromium        # once (or set PLAYWRIGHT_CHANNEL=chrome 
 E2E_MONGODB_URI="mongodb+srv://…/doctor_tracker_e2e?retryWrites=true&w=majority" npm run test:e2e
 ```
 
-13 browser tests (desktop 1440×900 and mobile 375×812) start the real API (port 4100) and a production build of the frontend (port 3100). The run **resets and seeds** the database in `E2E_MONGODB_URI`, so it refuses any database whose name does not contain `e2e` or `test`. Covered flows: login redirects and errors, password visibility, sign-out, dashboard totals and period selector, doctor search/sort/filter/pagination, add doctor with duplicate handling, doctor details with breadcrumbs, the full patient lifecycle (add with a custom condition, remove from doctor, reassign, edit, delete), URL-driven filters, mobile card lists, collapsible filters and the navigation drawer.
+15 browser tests (desktop 1440×900 and mobile 375×812) start the real API (port 4100) and a production build of the frontend (port 3100). The run **resets and seeds** the database in `E2E_MONGODB_URI`, so it refuses any database whose name does not contain `e2e` or `test`. Covered flows: login redirects and errors, password visibility, sign-out, dashboard totals and period selector, doctor search/sort/filter/pagination, add doctor with duplicate handling, doctor details with breadcrumbs, the full patient lifecycle (add with a custom condition, remove from doctor, reassign, edit, delete), URL-driven filters, mobile card lists, collapsible filters, the navigation drawer, the audit log and a live notification delivered to a second signed-in doctor.
 
 ## Screenshots
 

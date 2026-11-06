@@ -1,4 +1,4 @@
-import { Building2, ClipboardList, Globe, LayoutDashboard, MapPinned, MessagesSquare, Stethoscope, UserCog, Users, type LucideIcon } from "lucide-react";
+import { Building2, ClipboardList, ScrollText, Globe, LayoutDashboard, MapPinned, MessagesSquare, Stethoscope, UserCog, Users, type LucideIcon } from "lucide-react";
 import type { Permission } from "@/lib/permissions";
 import type { Role } from "@/types/api";
 
@@ -22,6 +22,7 @@ export const NAV_ITEMS: NavItem[] = [
   { title: "Locations", href: "/locations", icon: Building2, permission: "locations:manage" },
   { title: "Users", href: "/users", icon: UserCog, permission: "users:manage" },
   { title: "Site settings", href: "/settings", icon: Globe, permission: "settings:manage" },
+  { title: "Audit log", href: "/audit", icon: ScrollText, permission: "audit:read" },
 ];
 
 export function navItemsFor(role: Role | undefined, canDo: (p: Permission) => boolean): NavItem[] {

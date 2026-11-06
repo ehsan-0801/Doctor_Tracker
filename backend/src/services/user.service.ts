@@ -6,6 +6,7 @@ import { containsPattern } from "../utils/query.js";
 import { buildPagination } from "../utils/response.js";
 import type { CreateUserInput, UpdateUserInput, UserListQuery } from "../validators/user.validator.js";
 import { hashPassword, revokeUserSessions } from "./auth.service.js";
+import { notify } from "./notification.service.js";
 
 const PUBLIC_FIELDS = "name email role doctorId assignedDoctorIds active photoUrl lastLoginAt createdAt updatedAt";
 
@@ -94,7 +95,7 @@ async function assertNotLastAdmin(userId: string) {
 }
 
 export async function updateUser(id: string, input: UpdateUserInput, actorId: string) {
-  const existing = await User.findById(id).select("role active doctorId").lean();
+  const existing = await User.findById(id).select("role active doctorId assignedDoctorIds").lean();
   if (!existing) throw ApiError.notFound("User not found");
 
   const role = input.role ?? existing.role;
@@ -123,6 +124,21 @@ export async function updateUser(id: string, input: UpdateUserInput, actorId: st
       }),
     },
   );
+
+  // Let staff know about newly assigned doctors.
+  if (input.assignedDoctorIds !== undefined && (role === "staff" || role === "management")) {
+    const before = new Set((existing.assignedDoctorIds ?? []).map(String));
+    const added = input.assignedDoctorIds.filter((d) => !before.has(d));
+    if (added.length) {
+      const doctors = await Doctor.find({ _id: { $in: added } }).select("name").lean();
+      await notify([id], {
+        type: "staff_assigned",
+        title: added.length === 1 ? "New doctor assigned" : `${added.length} doctors assigned`,
+        body: `You now support ${doctors.map((d) => d.name).join(", ")}.`,
+        link: "/messages",
+      });
+    }
+  }
 
   // Access changed: force a fresh sign-in so the new permissions apply immediately.
   if (role !== existing.role || input.active === false || doctorId !== (existing.doctorId?.toString() ?? null)) {

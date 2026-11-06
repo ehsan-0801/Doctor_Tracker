@@ -2,9 +2,12 @@
 
 import { useQueryClient } from "@tanstack/react-query";
 import { createContext, useContext, useEffect, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 import { io, type Socket } from "socket.io-client";
+import { toast } from "sonner";
 import { trackingApi } from "@/lib/api/endpoints";
 import { queryKeys } from "@/lib/api/query-keys";
+import type { AppNotification } from "@/types/audit";
 import type { ChatMessage, ConversationSummary, PresenceView } from "@/types/tracking";
 
 /**
@@ -25,6 +28,11 @@ const RealtimeContext = createContext<{ socket: Socket | null; status: Status }>
  */
 export function RealtimeProvider({ children }: { children: React.ReactNode }) {
   const queryClient = useQueryClient();
+  const router = useRouter();
+  const routerRef = useRef(router);
+  useEffect(() => {
+    routerRef.current = router;
+  }, [router]);
   const [socket, setSocket] = useState<Socket | null>(null);
   const [status, setStatus] = useState<Status>("connecting");
   const started = useRef(false);
@@ -81,6 +89,24 @@ export function RealtimeProvider({ children }: { children: React.ReactNode }) {
         list?.map((c) => (c._id === userId ? { ...c, online } : c)),
       );
     });
+
+    s.on("notification:new", (notification: AppNotification) => {
+      queryClient.setQueryData<{ items: AppNotification[]; unread: number; hasMore: boolean }>(queryKeys.notifications, (data) =>
+        data && !data.items.some((n) => n._id === notification._id)
+          ? { ...data, items: [notification, ...data.items], unread: data.unread + 1 }
+          : data,
+      );
+      // No toast for a message in the conversation that is already open.
+      const here = window.location.pathname + window.location.search;
+      if (notification.type === "message" && notification.link === here) return;
+      toast(notification.title, {
+        description: notification.body,
+        action: notification.link ? { label: "Open", onClick: () => routerRef.current.push(notification.link) } : undefined,
+      });
+    });
+
+    // Admins: keep the audit log live.
+    s.on("audit:new", () => void queryClient.invalidateQueries({ queryKey: queryKeys.audit.all }));
 
     setSocket(s);
     return () => {

@@ -1,5 +1,6 @@
 import { Router } from "express";
 import { requireAuth } from "../middleware/requireAuth.js";
+import { auditRouter, notificationRouter } from "./audit.routes.js";
 import { authRouter } from "./auth.routes.js";
 import { dashboardRouter } from "./dashboard.routes.js";
 import { doctorRouter } from "./doctor.routes.js";
@@ -30,3 +31,5 @@ apiRouter.use("/realtime", realtimeRouter);
 apiRouter.use("/locations", locationRouter);
 apiRouter.use("/presence", presenceRouter);
 apiRouter.use("/chat", chatRouter);
+apiRouter.use("/audit", auditRouter);
+apiRouter.use("/notifications", notificationRouter);

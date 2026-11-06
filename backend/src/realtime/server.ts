@@ -83,6 +83,10 @@ export function emitPresence(update: { role: string } & Record<string, unknown>)
   io.to(update.role === "doctor" ? ["presence:all", "presence:doctors"] : ["presence:all"]).emit("presence:update", update);
 }
 
+export function emitToRoom(room: string, event: string, payload: unknown) {
+  io?.to(room).emit(event, payload);
+}
+
 export function emitToUsers(userIds: string[], event: string, payload: unknown) {
   if (!io || userIds.length === 0) return;
   io.to(userIds.map((id) => `user:${id}`)).emit(event, payload);

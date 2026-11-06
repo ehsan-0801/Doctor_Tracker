@@ -2,6 +2,8 @@ import type { Request, Response } from "express";
 import { z } from "zod";
 import * as doctorService from "../services/doctor.service.js";
 import * as patientService from "../services/patient.service.js";
+import { currentUser } from "../middleware/requireAuth.js";
+import { recordAudit } from "../services/audit.service.js";
 import { sendSuccess } from "../utils/response.js";
 import { idParamsSchema, optionalTrimmed } from "../validators/common.js";
 import { createDoctorSchema, doctorListQuerySchema, updateDoctorSchema } from "../validators/doctor.validator.js";
@@ -22,13 +24,17 @@ export async function list(req: Request, res: Response) {
 }
 
 export async function create(req: Request, res: Response) {
-  const doctor = await doctorService.createDoctor(createDoctorSchema.parse(req.body));
+  const input = createDoctorSchema.parse(req.body);
+  const doctor = await doctorService.createDoctor(input);
+  await recordAudit(req, currentUser(res), { action: "doctor.create", entityType: "doctor", entityId: String(doctor._id), entityLabel: doctor.name, changes: input });
   sendSuccess(res, "Doctor created successfully", doctor, { status: 201 });
 }
 
 export async function update(req: Request, res: Response) {
   const { id } = idParamsSchema.parse(req.params);
-  const doctor = await doctorService.updateDoctor(id, updateDoctorSchema.parse(req.body));
+  const input = updateDoctorSchema.parse(req.body);
+  const doctor = await doctorService.updateDoctor(id, input);
+  await recordAudit(req, currentUser(res), { action: "doctor.update", entityType: "doctor", entityId: id, entityLabel: doctor.name, changes: input });
   sendSuccess(res, "Doctor updated successfully", doctor);
 }
 
@@ -58,11 +64,13 @@ export async function addPatient(req: Request, res: Response) {
   const { id } = idParamsSchema.parse(req.params);
   const body = createDoctorPatientSchema.parse(req.body);
   const patient = await patientService.createPatient({ ...body, doctorId: id });
+  await recordAudit(req, currentUser(res), { action: "patient.create", entityType: "patient", entityId: String(patient._id), entityLabel: patient.name, changes: { ...body, doctor: (patient.doctor as { name?: string } | null)?.name } });
   sendSuccess(res, "Patient added to doctor successfully", patient, { status: 201 });
 }
 
 export async function removePatient(req: Request, res: Response) {
   const { id, patientId } = doctorPatientParamsSchema.parse(req.params);
   const patient = await patientService.unassignPatient(id, patientId);
+  await recordAudit(req, currentUser(res), { action: "patient.unassign", entityType: "patient", entityId: patientId, entityLabel: patient.name, changes: { doctorId: id } });
   sendSuccess(res, "Patient removed from doctor's list", patient);
 }

@@ -125,3 +125,15 @@ export const chatApi = {
   send: (id: string, body: string) => api.post<import("@/types/tracking").ChatMessage>(`/chat/conversations/${id}/messages`, { body }),
   read: (id: string) => api.post<null>(`/chat/conversations/${id}/read`),
 };
+
+export const auditApi = {
+  list: (params: { page?: number; search?: string; action?: string; entityType?: string; startDate?: string; endDate?: string }) =>
+    api.list<import("@/types/audit").AuditEntry>("/audit", { ...params, limit: 20 }),
+  facets: () => api.get<{ actions: string[]; entityTypes: string[] }>("/audit/facets"),
+};
+
+export const notificationsApi = {
+  list: () => api.get<{ items: import("@/types/audit").AppNotification[]; unread: number; hasMore: boolean }>("/notifications", { limit: 20 }),
+  read: (id: string) => api.post<null>(`/notifications/${id}/read`),
+  readAll: () => api.post<null>("/notifications/read-all"),
+};

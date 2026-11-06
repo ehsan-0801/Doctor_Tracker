@@ -40,7 +40,7 @@ export default defineConfig({
     {
       command: `npx next build && npx next start -p ${WEB_PORT}`,
       url: `http://localhost:${WEB_PORT}/login`,
-      env: { API_URL: `http://localhost:${API_PORT}`, NEXT_DIST_DIR: ".next-e2e" },
+      env: { API_URL: `http://localhost:${API_PORT}`, NEXT_PUBLIC_REALTIME_URL: `http://localhost:${API_PORT}`, NEXT_DIST_DIR: ".next-e2e" },
       reuseExistingServer: false,
       timeout: 240_000,
     },

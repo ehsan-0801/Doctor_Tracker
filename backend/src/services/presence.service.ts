@@ -10,6 +10,7 @@ import type { z } from "zod";
 import type { setPresenceSchema } from "../validators/tracking.validator.js";
 import { canSetPresenceOf } from "./access.service.js";
 import type { AuthenticatedUser } from "./auth.service.js";
+import { notify } from "./notification.service.js";
 
 type LeanUser = {
   _id: Types.ObjectId;
@@ -100,6 +101,14 @@ export async function setPresence(actor: AuthenticatedUser, targetUserId: string
 
   const [view] = await buildViews([target]);
   emitPresence(view!);
+  if (subject.id !== actor.id) {
+    await notify([subject.id], {
+      type: "location_updated",
+      title: "Your location was updated",
+      body: `${actor.name} set you to ${view!.location ? view!.location.name : "no location"} (${input.status.replace("_", " ")}).`,
+      link: "/tracking",
+    });
+  }
   return { ...view!, canUpdate: true };
 }
 

@@ -6,6 +6,7 @@ import { emitToUsers, isOnline } from "../realtime/server.js";
 import { ApiError } from "../utils/ApiError.js";
 import { type AccessSubject, canChat } from "./access.service.js";
 import type { AuthenticatedUser } from "./auth.service.js";
+import { notify } from "./notification.service.js";
 
 type LeanUser = {
   _id: Types.ObjectId;
@@ -137,6 +138,12 @@ export async function sendMessage(actor: AuthenticatedUser, conversationId: stri
     message: { _id: message._id.toString(), senderId: actor.id, body: message.body, createdAt: now },
   };
   emitToUsers([actor.id, other._id.toString()], "chat:message", payload);
+  await notify([other._id], {
+    type: "message",
+    title: `New message from ${actor.name}`,
+    body: body.slice(0, 140),
+    link: `/messages?c=${conversationId}`,
+  });
   void conversation;
   return payload.message;
 }
