@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from "next";
+import Script from "next/script";
 import { Anek_Bangla, Inter } from "next/font/google";
 import { Providers } from "@/components/providers";
 import "./globals.css";
@@ -19,11 +20,11 @@ export const viewport: Viewport = { themeColor: "#253c48" };
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html lang="en" suppressHydrationWarning className={`${inter.variable} ${anekBangla.variable} h-full antialiased`}>
-      <head>
-        {/* Apply the saved portal theme before first paint (no light flash). */}
-        <script dangerouslySetInnerHTML={{ __html: THEME_SCRIPT }} />
-      </head>
       <body className="min-h-full bg-background text-foreground">
+        {/* Apply the saved portal theme before hydration (no light flash). */}
+        <Script id="doctrack-theme-init" strategy="beforeInteractive">
+          {THEME_SCRIPT}
+        </Script>
         <Providers>{children}</Providers>
       </body>
     </html>
