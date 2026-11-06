@@ -11,6 +11,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Skeleton } from "@/components/ui/skeleton";
+import { UserAvatar } from "@/components/shared/user-avatar";
 import { useSession } from "@/hooks/use-session";
 import { ROLE_LABELS } from "@/lib/permissions";
 import { Brand } from "./brand";
@@ -37,9 +38,7 @@ export function AppHeader() {
             className="flex h-10 items-center gap-2 rounded-lg px-2 text-sm hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
             aria-label="Account menu"
           >
-            <span className="flex size-8 items-center justify-center rounded-full bg-accent text-xs font-semibold text-accent-foreground">
-              {user ? user.name[0]?.toUpperCase() : "·"}
-            </span>
+            {user ? <UserAvatar name={user.name} photoUrl={user.photoUrl} /> : <span className="size-8 rounded-full bg-muted" />}
             <span className="hidden min-w-0 flex-col items-start leading-tight sm:flex">
               {user ? (
                 <>

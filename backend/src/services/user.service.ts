@@ -7,7 +7,7 @@ import { buildPagination } from "../utils/response.js";
 import type { CreateUserInput, UpdateUserInput, UserListQuery } from "../validators/user.validator.js";
 import { hashPassword, revokeUserSessions } from "./auth.service.js";
 
-const PUBLIC_FIELDS = "name email role doctorId active lastLoginAt createdAt updatedAt";
+const PUBLIC_FIELDS = "name email role doctorId active photoUrl lastLoginAt createdAt updatedAt";
 const DOCTOR_FIELDS = "name specialization";
 
 export async function listUsers(query: UserListQuery) {
@@ -62,6 +62,7 @@ export async function createUser(input: CreateUserInput) {
     role: input.role,
     passwordHash: await hashPassword(input.password),
     doctorId: input.role === "doctor" ? input.doctorId : null,
+    photoUrl: input.photoUrl ?? "",
   });
   return getUser(user._id.toString());
 }
@@ -91,7 +92,13 @@ export async function updateUser(id: string, input: UpdateUserInput, actorId: st
 
   await User.updateOne(
     { _id: id },
-    { ...(input.name !== undefined && { name: input.name }), role, doctorId, ...(input.active !== undefined && { active: input.active }) },
+    {
+      ...(input.name !== undefined && { name: input.name }),
+      role,
+      doctorId,
+      ...(input.active !== undefined && { active: input.active }),
+      ...(input.photoUrl !== undefined && { photoUrl: input.photoUrl }),
+    },
   );
 
   // Access changed: force a fresh sign-in so the new permissions apply immediately.

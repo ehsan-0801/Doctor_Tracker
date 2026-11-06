@@ -10,6 +10,8 @@ const userSchema = new Schema(
     // Set only for doctor accounts: the doctor record this login belongs to.
     doctorId: { type: Schema.Types.ObjectId, ref: "Doctor", default: null },
     active: { type: Boolean, default: true },
+    // Optional profile photo (https URL, e.g. Cloudinary DocTrack/staff).
+    photoUrl: { type: String, trim: true, maxlength: 500, default: "" },
     lastLoginAt: { type: Date, default: null },
   },
   { timestamps: true },

@@ -30,6 +30,7 @@ export interface SessionUser {
   email: string;
   role: Role;
   doctorId: string | null;
+  photoUrl?: string;
 }
 
 export interface UserAccount {
@@ -38,6 +39,7 @@ export interface UserAccount {
   email: string;
   role: Role;
   active: boolean;
+  photoUrl?: string;
   doctor: { _id: string; name: string; specialization: string } | null;
   lastLoginAt: string | null;
   createdAt: string;

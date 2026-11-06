@@ -9,6 +9,7 @@ import { toast } from "sonner";
 import { z } from "zod";
 import { DoctorCombobox, type DoctorChoice } from "@/components/patients/doctor-combobox";
 import { fieldAria, FormField } from "@/components/shared/form-field";
+import { ImageUpload } from "@/components/shared/image-upload";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
@@ -27,6 +28,7 @@ const baseSchema = z.object({
   email: z.string().trim().min(1, "Email is required").pipe(z.email("Enter a valid email")),
   role: z.enum(["admin", "management", "staff", "doctor"]),
   password: z.string(),
+  photoUrl: z.string(),
   doctor: z.custom<DoctorChoice | null>(),
 });
 
@@ -65,6 +67,7 @@ export function UserFormDialog({
       email: user?.email ?? "",
       role: user?.role ?? "staff",
       password: "",
+      photoUrl: user?.photoUrl ?? "",
       doctor: user?.doctor ? { _id: user.doctor._id, name: user.doctor.name } : null,
     });
   }, [open, user, reset]);
@@ -75,10 +78,17 @@ export function UserFormDialog({
     const doctorId = values.role === "doctor" ? values.doctor?._id : undefined;
     try {
       if (creating) {
-        await usersApi.create({ name: values.name, email: values.email, role: values.role, password: values.password, doctorId });
+        await usersApi.create({
+          name: values.name,
+          email: values.email,
+          role: values.role,
+          password: values.password,
+          doctorId,
+          photoUrl: values.photoUrl,
+        });
         toast.success(`Account created for ${values.name}`);
       } else {
-        await usersApi.update(user._id, { name: values.name, role: values.role, doctorId: doctorId ?? null });
+        await usersApi.update(user._id, { name: values.name, role: values.role, doctorId: doctorId ?? null, photoUrl: values.photoUrl });
         toast.success("Account updated");
       }
       await queryClient.invalidateQueries({ queryKey: queryKeys.users.all });
@@ -100,6 +110,13 @@ export function UserFormDialog({
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={onSubmit} noValidate className="space-y-4">
+          <FormField id="user-photo" label="Photo (optional)">
+            <Controller
+              control={control}
+              name="photoUrl"
+              render={({ field }) => <ImageUpload id="user-photo" purpose="staff" label="Photo" value={field.value} onChange={field.onChange} />}
+            />
+          </FormField>
           <FormField id="user-name" label="Full name" error={errors.name?.message}>
             <Input {...fieldAria("user-name", errors.name?.message)} className="h-10" {...register("name")} />
           </FormField>

@@ -32,9 +32,10 @@ describe("upload signatures", () => {
     const res = await admin.post("/api/uploads/signature").send({ purpose: "doctors" });
     expect(res.status).toBe(200);
     const d = res.body.data;
-    expect(d).toMatchObject({ folder: "doctrack/doctors", cloudName: "test-cloud", apiKey: "123456789012345", allowed_formats: "jpg,jpeg,png,webp" });
+    expect(d).toMatchObject({ folder: "DocTrack/doctors", cloudName: "test-cloud", apiKey: "123456789012345", allowed_formats: "jpg,jpeg,png,webp" });
     expect(JSON.stringify(res.body)).not.toContain("test-secret");
     expect(d.signature).toBe(signParams({ allowed_formats: d.allowed_formats, folder: d.folder, timestamp: d.timestamp }, "test-secret"));
+    expect((await admin.post("/api/uploads/signature").send({ purpose: "staff" })).body.data.folder).toBe("DocTrack/staff");
     expect((await admin.post("/api/uploads/signature").send({ purpose: "anything" })).status).toBe(400);
   });
 });
@@ -59,5 +60,21 @@ describe("doctor updates", () => {
     expect((await admin.patch(`/api/doctors/${a._id}`).send({ email: b.email })).status).toBe(409);
     const staff = await t.loggedInAgent("staff");
     expect((await staff.patch(`/api/doctors/${a._id}`).send({ name: "Dr. Hack" })).status).toBe(403);
+  });
+});
+
+describe("staff photos", () => {
+  it("stores an https photo on user accounts and returns it in the session", async () => {
+    const admin = await t.loggedInAgent();
+    const created = await admin.post("/api/users").send({
+      name: "Desk", email: "desk-photo@test.local", role: "staff", password: "Desk1234",
+      photoUrl: "https://res.cloudinary.com/test-cloud/image/upload/v1/DocTrack/staff/a.jpg",
+    });
+    expect(created.status).toBe(201);
+    expect(created.body.data.photoUrl).toContain("DocTrack/staff");
+    expect((await admin.patch(`/api/users/${created.body.data._id}`).send({ photoUrl: "ftp://x/y.jpg" })).status).toBe(400);
+    const desk = request.agent(t.app);
+    await desk.post("/api/auth/login").send({ email: "desk-photo@test.local", password: "Desk1234" }).expect(200);
+    expect((await desk.get("/api/auth/session")).body.data.user.photoUrl).toContain("DocTrack/staff");
   });
 });

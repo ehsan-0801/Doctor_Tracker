@@ -60,12 +60,13 @@ export interface UserFormInput {
   role: Role;
   password: string;
   doctorId?: string;
+  photoUrl?: string;
 }
 
 export const usersApi = {
   list: (params: UserListParams) => api.list<UserAccount>("/users", { ...params }),
   create: (input: UserFormInput) => api.post<UserAccount>("/users", input),
-  update: (id: string, input: Partial<{ name: string; role: Role; active: boolean; doctorId: string | null }>) =>
+  update: (id: string, input: Partial<{ name: string; role: Role; active: boolean; doctorId: string | null; photoUrl: string }>) =>
     api.patch<UserAccount>(`/users/${id}`, input),
   resetPassword: (id: string, password: string) => api.post<null>(`/users/${id}/reset-password`, { password }),
 };
@@ -93,5 +94,5 @@ export interface UploadSignature {
 }
 
 export const uploadsApi = {
-  signature: (purpose: "doctors" | "site") => api.post<UploadSignature>("/uploads/signature", { purpose }),
+  signature: (purpose: "doctors" | "staff" | "site") => api.post<UploadSignature>("/uploads/signature", { purpose }),
 };

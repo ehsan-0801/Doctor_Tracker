@@ -24,7 +24,7 @@ export function ImageUpload({
   id: string;
   value: string;
   onChange: (url: string) => void;
-  purpose: "doctors" | "site";
+  purpose: "doctors" | "staff" | "site";
   label: string;
 }) {
   const inputRef = useRef<HTMLInputElement>(null);

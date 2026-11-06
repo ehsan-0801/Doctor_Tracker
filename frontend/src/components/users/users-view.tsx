@@ -6,6 +6,7 @@ import { KeyRound, MoreHorizontal, Pencil, Plus, Power, UserCog } from "lucide-r
 import { toast } from "sonner";
 import { PageHeader } from "@/components/layout/page-header";
 import { AccessDenied } from "@/components/shared/access-denied";
+import { UserAvatar } from "@/components/shared/user-avatar";
 import { ConfirmDialog } from "@/components/shared/confirm-dialog";
 import { DataTable, type Column } from "@/components/shared/data-table";
 import { FilterBar } from "@/components/shared/filter-bar";
@@ -114,9 +115,12 @@ export function UsersView() {
       header: "User",
       sortKey: "name",
       cell: (u) => (
-        <div className="min-w-0">
-          <p className="truncate font-medium text-foreground">{u.name}</p>
-          <p className="truncate text-xs text-muted-foreground">{u.email}</p>
+        <div className="flex min-w-0 items-center gap-3">
+          <UserAvatar name={u.name} photoUrl={u.photoUrl} className="size-9" />
+          <div className="min-w-0">
+            <p className="truncate font-medium text-foreground">{u.name}</p>
+            <p className="truncate text-xs text-muted-foreground">{u.email}</p>
+          </div>
         </div>
       ),
     },
@@ -173,6 +177,7 @@ export function UsersView() {
           onSortChange={(next) => setFilters({ sortBy: next.sortBy, sortOrder: next.sortOrder, page: 1 })}
           renderMobileCard={(u) => (
             <div className="flex items-start gap-3">
+              <UserAvatar name={u.name} photoUrl={u.photoUrl} className="size-10" />
               <div className="min-w-0 flex-1 space-y-1">
                 <p className="truncate font-medium">{u.name}</p>
                 <p className="truncate text-sm text-muted-foreground">{u.email}</p>

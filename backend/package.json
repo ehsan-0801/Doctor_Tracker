@@ -10,7 +10,8 @@
     "typecheck": "tsc --noEmit",
     "seed": "tsx --env-file-if-exists=.env src/scripts/seed.ts",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "cloudinary:setup": "tsx --env-file-if-exists=.env src/scripts/cloudinary-setup.ts"
   },
   "dependencies": {
     "bcryptjs": "^3.0.3",

@@ -2,6 +2,8 @@ import { z } from "zod";
 import { ROLES } from "../constants/roles.js";
 import { listQueryBase, objectIdSchema, optionalTrimmed } from "./common.js";
 
+const photoUrl = z.union([z.literal(""), z.url({ protocol: /^https$/, message: "Use an https:// image URL" }).max(500)]);
+
 const email = z.string().trim().toLowerCase().max(254).pipe(z.email("Enter a valid email"));
 const password = z
   .string()
@@ -17,6 +19,7 @@ export const createUserSchema = z
     role: z.enum(ROLES),
     password,
     doctorId: objectIdSchema.optional(),
+    photoUrl: photoUrl.optional(),
   })
   .refine((u) => u.role !== "doctor" || u.doctorId, { message: "Select the doctor this account belongs to", path: ["doctorId"] });
 
@@ -26,6 +29,7 @@ export const updateUserSchema = z
     role: z.enum(ROLES).optional(),
     doctorId: objectIdSchema.nullable().optional(),
     active: z.boolean().optional(),
+    photoUrl: photoUrl.optional(),
   })
   .refine((body) => Object.values(body).some((v) => v !== undefined), "Provide at least one field to update");
 
