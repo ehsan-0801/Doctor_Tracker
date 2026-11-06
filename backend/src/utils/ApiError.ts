@@ -1,0 +1,23 @@
+export class ApiError extends Error {
+  constructor(
+    public readonly statusCode: number,
+    message: string,
+    public readonly errors: { field?: string; message: string }[] = [],
+  ) {
+    super(message);
+    this.name = "ApiError";
+  }
+
+  static badRequest(message: string, errors?: { field?: string; message: string }[]) {
+    return new ApiError(400, message, errors);
+  }
+  static unauthorized(message = "Authentication required") {
+    return new ApiError(401, message);
+  }
+  static notFound(message = "Resource not found") {
+    return new ApiError(404, message);
+  }
+  static conflict(message: string, errors?: { field?: string; message: string }[]) {
+    return new ApiError(409, message, errors);
+  }
+}

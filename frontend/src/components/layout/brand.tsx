@@ -1,0 +1,13 @@
+import { Activity } from "lucide-react";
+import { cn } from "@/lib/utils";
+
+export function Brand({ compact = false, className }: { compact?: boolean; className?: string }) {
+  return (
+    <div className={cn("flex items-center gap-2.5", className)}>
+      <span className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-primary text-primary-foreground">
+        <Activity className="size-5" aria-hidden />
+      </span>
+      {!compact && <span className="text-[15px] font-semibold tracking-tight">Doctor Tracker</span>}
+    </div>
+  );
+}

@@ -1,0 +1,19 @@
+# Secrets
+atlas-credentials.env
+.env
+.env.local
+.env*.local
+
+# Dependencies / builds
+node_modules
+dist
+.next
+.DS_Store
+
+# Local planning docs and AI tooling (not part of the deliverable)
+project-docs/
+.claude/
+.CLAUDE.md
+CLAUDE.md
+*.md
+!README.md
