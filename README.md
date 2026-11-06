@@ -479,4 +479,12 @@ The hero and About videos (and their poster frames) are from [Mixkit](https://mi
 
 ## Roadmap
 
-DocTrack is built for a single hospital organization; it is not multi-tenant. Doctor deletion is intentionally not offered, because patient records, user accounts and chat history reference doctors. Planned next steps, including the patient portal, condition timeline and appointments, are in [`project-docs/roadmap.md`](project-docs/roadmap.md).
+DocTrack is built for a single hospital organization; it is not multi-tenant. Doctor deletion is intentionally not offered, because patient records, user accounts and chat history reference doctors.
+
+Planned next steps:
+
+1. **Patient portal**: patients sign in with a username and a secret access token to see their own record.
+2. **Condition timeline**: a dated history of each patient's condition, written by their doctor and visible to the patient.
+3. **Appointments**: booking from the public doctor profile or the front desk, with availability that follows the doctor's live status.
+4. **Exports**: CSV/PDF for patient and doctor lists, the audit log and dashboard reports, plus chart drill-down into filtered lists.
+5. **Account security**: self-service password change, active-session management and optional two-factor sign-in for admins.
