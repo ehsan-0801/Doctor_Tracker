@@ -1,6 +1,7 @@
 "use client";
 
-import { useQuery } from "@tanstack/react-query";
+import { keepPreviousData, useQuery } from "@tanstack/react-query";
+import { useState } from "react";
 import { CalendarPlus, Stethoscope, UserRoundCheck, Users } from "lucide-react";
 import {
   Area,
@@ -16,11 +17,19 @@ import {
 } from "recharts";
 import { PageHeader } from "@/components/layout/page-header";
 import { ErrorState } from "@/components/shared/states";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { dashboardApi } from "@/lib/api/endpoints";
 import { queryKeys } from "@/lib/api/query-keys";
 import { formatMonth, formatMonthShort, formatNumber } from "@/lib/format";
 import { CHART, ChartCard, ChartTooltip } from "./chart-card";
+import { RecentPatients } from "./recent-patients";
 import { StatCard } from "./stat-card";
+
+const PERIODS = [
+  { months: 6, label: "Last 6 months" },
+  { months: 12, label: "Last 12 months" },
+  { months: 24, label: "Last 24 months" },
+];
 
 const plural = (n: number, word: string) => `${formatNumber(n)} ${word}${n === 1 ? "" : "s"}`;
 
@@ -32,14 +41,16 @@ function trendText(current: number, previous: number, days: number) {
 }
 
 export function DashboardView() {
+  const [months, setMonths] = useState(12);
   const stats = useQuery({ queryKey: [...queryKeys.dashboard.all, "stats"], queryFn: dashboardApi.stats });
   const perDoctor = useQuery({
     queryKey: [...queryKeys.dashboard.all, "per-doctor"],
     queryFn: () => dashboardApi.patientsPerDoctor(8),
   });
   const registrations = useQuery({
-    queryKey: [...queryKeys.dashboard.all, "registrations"],
-    queryFn: () => dashboardApi.registrations(12),
+    queryKey: [...queryKeys.dashboard.all, "registrations", months],
+    queryFn: () => dashboardApi.registrations(months),
+    placeholderData: keepPreviousData,
   });
   const conditions = useQuery({
     queryKey: [...queryKeys.dashboard.all, "conditions"],
@@ -136,7 +147,21 @@ export function DashboardView() {
 
         <ChartCard
           title="Patient registrations"
-          description={`New patient records per month · ${formatNumber(registrationTotal)} in the last 12 months`}
+          description={`New patient records per month · ${formatNumber(registrationTotal)} in the last ${months} months`}
+          action={
+            <Select value={String(months)} onValueChange={(value) => setMonths(Number(value))}>
+              <SelectTrigger size="sm" className="w-[150px] shrink-0" aria-label="Registration period">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent align="end">
+                {PERIODS.map((period) => (
+                  <SelectItem key={period.months} value={String(period.months)}>
+                    {period.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          }
           loading={registrations.isLoading}
           error={registrations.error}
           onRetry={() => registrations.refetch()}
@@ -187,45 +212,48 @@ export function DashboardView() {
         </ChartCard>
       </div>
 
-      <ChartCard
-        title="Patients by condition"
-        description="Most common conditions across all patient records"
-        loading={conditions.isLoading}
-        error={conditions.error}
-        onRetry={() => conditions.refetch()}
-        isEmpty={!conditions.data?.length}
-        emptyText="Condition statistics will appear once patients are added."
-        table={{
-          caption: "Patients by condition",
-          headers: ["Condition", "Patients"],
-          rows: conditions.data?.map((c) => [c.condition, c.count]) ?? [],
-        }}
-      >
-        <ResponsiveContainer width="100%" height={Math.max(200, (conditions.data?.length ?? 0) * 38 + 30)}>
-          <BarChart data={conditions.data} layout="vertical" margin={{ top: 0, right: 36, bottom: 0, left: 0 }}>
-            <CartesianGrid horizontal={false} stroke={CHART.grid} />
-            <XAxis type="number" allowDecimals={false} tick={{ fontSize: CHART.font, fill: CHART.axis }} axisLine={false} tickLine={false} />
-            <YAxis
-              type="category"
-              dataKey="condition"
-              width={150}
-              tick={{ fontSize: CHART.font, fill: "var(--foreground)" }}
-              axisLine={false}
-              tickLine={false}
-            />
-            <Tooltip
-              cursor={{ fill: "var(--muted)" }}
-              content={({ active, payload }) => {
-                const row = payload?.[0]?.payload as { condition: string; count: number } | undefined;
-                return active && row ? <ChartTooltip label={row.condition} value={plural(row.count, "patient")} /> : null;
-              }}
-            />
-            <Bar dataKey="count" fill={CHART.mark} radius={[0, 4, 4, 0]} maxBarSize={22}>
-              <LabelList dataKey="count" position="right" style={{ fontSize: CHART.font, fill: "var(--foreground)" }} />
-            </Bar>
-          </BarChart>
-        </ResponsiveContainer>
-      </ChartCard>
+      <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
+        <ChartCard
+          title="Patients by condition"
+          description="Most common conditions across all patient records"
+          loading={conditions.isLoading}
+          error={conditions.error}
+          onRetry={() => conditions.refetch()}
+          isEmpty={!conditions.data?.length}
+          emptyText="Condition statistics will appear once patients are added."
+          table={{
+            caption: "Patients by condition",
+            headers: ["Condition", "Patients"],
+            rows: conditions.data?.map((c) => [c.condition, c.count]) ?? [],
+          }}
+        >
+          <ResponsiveContainer width="100%" height={Math.max(200, (conditions.data?.length ?? 0) * 38 + 30)}>
+            <BarChart data={conditions.data} layout="vertical" margin={{ top: 0, right: 36, bottom: 0, left: 0 }}>
+              <CartesianGrid horizontal={false} stroke={CHART.grid} />
+              <XAxis type="number" allowDecimals={false} tick={{ fontSize: CHART.font, fill: CHART.axis }} axisLine={false} tickLine={false} />
+              <YAxis
+                type="category"
+                dataKey="condition"
+                width={150}
+                tick={{ fontSize: CHART.font, fill: "var(--foreground)" }}
+                axisLine={false}
+                tickLine={false}
+              />
+              <Tooltip
+                cursor={{ fill: "var(--muted)" }}
+                content={({ active, payload }) => {
+                  const row = payload?.[0]?.payload as { condition: string; count: number } | undefined;
+                  return active && row ? <ChartTooltip label={row.condition} value={plural(row.count, "patient")} /> : null;
+                }}
+              />
+              <Bar dataKey="count" fill={CHART.mark} radius={[0, 4, 4, 0]} maxBarSize={22}>
+                <LabelList dataKey="count" position="right" style={{ fontSize: CHART.font, fill: "var(--foreground)" }} />
+              </Bar>
+            </BarChart>
+          </ResponsiveContainer>
+        </ChartCard>
+        <RecentPatients />
+      </div>
     </div>
   );
 }

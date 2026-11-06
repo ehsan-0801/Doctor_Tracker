@@ -8,7 +8,7 @@ export const createDoctorSchema = z.object({
   specialization: z.string().trim().min(2, "Specialization is required").max(120),
   hospital: z.string().trim().min(2, "Hospital is required").max(160),
   phone: z.string().trim().regex(PHONE_PATTERN, "Enter a valid phone number"),
-  email: z.email("Enter a valid email").trim().toLowerCase().max(254),
+  email: z.string().trim().toLowerCase().max(254).pipe(z.email("Enter a valid email")),
 });
 
 export const doctorListQuerySchema = withDateRangeCheck(

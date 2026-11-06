@@ -9,8 +9,8 @@
 ## Features
 
 - **Authentication** – administrator login with hashed passwords, server-side sessions in an `httpOnly` cookie, logout that revokes the session, rate-limited sign-in, protected pages and APIs.
-- **Dashboard** – total doctors, total patients, average patients per doctor, new patients in the last 30 days (with trend), patients-per-doctor chart, monthly registration chart, patients-by-condition chart. All numbers are computed in MongoDB.
-- **Doctors** – add doctors, list with server-side search (name, email, specialization, hospital), specialization / hospital / created-date filters, pagination, patient count per doctor, doctor details page.
+- **Dashboard** – total doctors, total patients, average patients per doctor, new patients in the last 30 days (with trend), patients-per-doctor chart, monthly registration chart (6/12/24-month period), patients-by-condition chart, recently added patients. All numbers are computed in MongoDB.
+- **Doctors** – add doctors, list with server-side search (name, email, specialization, hospital), specialization / hospital / created-date filters, sortable columns, pagination, patient count per doctor, doctor details page with breadcrumbs.
 - **Doctor's patients** – list, search and filter a doctor's patients, add a patient under the doctor, remove a patient from the doctor (the record is kept as *unassigned*), edit and delete.
 - **Patients** – global directory with search, condition / doctor (including *Unassigned*) / registration-date filters, pagination, create, edit (including reassignment) and delete with confirmation.
 - **Responsive UI** – persistent sidebar on desktop, icon rail on tablet, drawer navigation and card lists on mobile, collapsible filters, no horizontal scrolling.
@@ -191,6 +191,8 @@ Open http://localhost:3000 and sign in with `ADMIN_EMAIL` / `ADMIN_PASSWORD`.
 | frontend | `npm run dev` | Next.js development server |
 | frontend | `npm run build && npm start` | production build and server |
 | frontend | `npm run lint` | ESLint |
+| backend | `npm test` | API integration tests |
+| frontend | `npm run test:e2e` | Playwright end-to-end tests (needs `E2E_MONGODB_URI`) |
 
 ### Deployment notes
 
@@ -234,16 +236,26 @@ Errors use `{ "success": false, "message": "...", "errors": [{ "field": "email",
 
 Date statistics always use the record's `createdAt` (registration date).
 
-## Verification
+## Testing
 
-The following checks were run against MongoDB Atlas:
+### Backend (Vitest + Supertest)
 
-- **API (42 checks):** authentication (valid / invalid login, validation, unauthenticated access, logout and reuse of a revoked cookie), doctor create / duplicate email / search / filters / date range / pagination / invalid and missing ids, patient create / condition canonicalization / unassign / reassign / invalid doctor reference / update / delete, global filters, and dashboard totals against known data.
-- **Browser (29 checks, headless Chrome):** login redirect and errors, dashboard values, doctor search, pagination, add doctor (including the inline duplicate-email error), doctor details, add patient with a custom condition, remove from doctor, reassign via edit, delete, URL-driven filters, sign-out, mobile drawer navigation, and no horizontal overflow at 375, 430, 768, 1366 and 1440 px wide.
-- The condition filter query plan was confirmed to use the `condition_1_createdAt_-1` index.
-- `tsc` passes for both apps, `next build` passes, and ESLint passes.
+```bash
+cd backend
+npm test
+```
 
-There is no committed automated test suite yet. Adding Vitest/Supertest API tests and Playwright end-to-end tests is the next step.
+42 integration tests run against an **in-memory MongoDB** (`mongodb-memory-server`), so they need no Atlas access and never touch real data. They cover authentication (validation, generic errors, httpOnly cookie, hashed session tokens, logout revocation, expired sessions), doctors (create, duplicates, search with regex escaping, filters, date ranges, sorting, pagination, patient counts, invalid ids), patients (doctor association, unassign without delete, condition canonicalization, filters, reassignment, invalid references, delete, NoSQL-operator injection) and dashboard aggregations.
+
+### End-to-end (Playwright)
+
+```bash
+cd frontend
+npx playwright install chromium        # once (or set PLAYWRIGHT_CHANNEL=chrome to use installed Chrome)
+E2E_MONGODB_URI="mongodb+srv://…/doctor_tracker_e2e?retryWrites=true&w=majority" npm run test:e2e
+```
+
+13 browser tests (desktop 1440×900 and mobile 375×812) start the real API (port 4100) and a production build of the frontend (port 3100). The run **resets and seeds** the database in `E2E_MONGODB_URI`, so it refuses any database whose name does not contain `e2e` or `test`. Covered flows: login redirects and errors, password visibility, sign-out, dashboard totals and period selector, doctor search/sort/filter/pagination, add doctor with duplicate handling, doctor details with breadcrumbs, the full patient lifecycle (add with a custom condition, remove from doctor, reassign, edit, delete), URL-driven filters, mobile card lists, collapsible filters and the navigation drawer.
 
 ## Screenshots
 

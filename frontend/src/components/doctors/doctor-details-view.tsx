@@ -1,11 +1,11 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
-import Link from "next/link";
 import { useState } from "react";
-import { ArrowLeft, Building2, CalendarDays, Mail, Phone, Plus, Stethoscope, Users } from "lucide-react";
+import { Building2, CalendarDays, Mail, Phone, Plus, Stethoscope, Users } from "lucide-react";
 import { PatientFormDialog } from "@/components/patients/patient-form-dialog";
 import { PatientsPanel } from "@/components/patients/patients-panel";
+import { Breadcrumbs } from "@/components/shared/breadcrumbs";
 import { EmptyState, ErrorState } from "@/components/shared/states";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -34,11 +34,7 @@ export function DoctorDetailsView({ id }: { id: string }) {
   const doctor = useQuery({ queryKey: queryKeys.doctors.detail(id), queryFn: () => doctorsApi.get(id) });
   const d = doctor.data;
 
-  const back = (
-    <Link href="/doctors" className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground">
-      <ArrowLeft className="size-4" aria-hidden /> Back to doctors
-    </Link>
-  );
+  const back = <Breadcrumbs items={[{ label: "Doctors", href: "/doctors" }, { label: d?.name ?? "Doctor details" }]} />;
 
   if (doctor.error) {
     const notFound = doctor.error instanceof ApiError && (doctor.error.status === 404 || doctor.error.status === 400);
@@ -58,7 +54,7 @@ export function DoctorDetailsView({ id }: { id: string }) {
 
   return (
     <div className="space-y-6">
-      <nav aria-label="Breadcrumb">{back}</nav>
+      {back}
 
       <section className="rounded-xl border bg-card p-5 sm:p-6" aria-label="Doctor information">
         {!d ? (

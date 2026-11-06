@@ -1,13 +1,22 @@
 "use client";
 
+import { ArrowDown, ArrowUp, ArrowUpDown } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { cn } from "@/lib/utils";
+import type { SortOrder } from "@/types/api";
 import { ErrorState } from "./states";
+
+export interface SortState<K extends string = string> {
+  sortBy: K;
+  sortOrder: SortOrder;
+}
 
 export interface Column<T> {
   id: string;
   header: React.ReactNode;
+  /** Server-side sort field; makes the header a sort toggle. */
+  sortKey?: string;
   cell: (row: T) => React.ReactNode;
   className?: string;
   headerClassName?: string;
@@ -26,6 +35,36 @@ interface DataTableProps<T> {
   onRetry?: () => void;
   empty: React.ReactNode;
   skeletonRows?: number;
+  sort?: SortState;
+  onSortChange?: (sort: SortState) => void;
+}
+
+function SortHeader({
+  label,
+  sortKey,
+  sort,
+  onSortChange,
+}: {
+  label: React.ReactNode;
+  sortKey: string;
+  sort: SortState;
+  onSortChange: (sort: SortState) => void;
+}) {
+  const active = sort.sortBy === sortKey;
+  const Icon = !active ? ArrowUpDown : sort.sortOrder === "asc" ? ArrowUp : ArrowDown;
+  // Names start A→Z; dates start newest-first.
+  const firstOrder: SortOrder = sortKey === "name" ? "asc" : "desc";
+  const next: SortOrder = active ? (sort.sortOrder === "asc" ? "desc" : "asc") : firstOrder;
+  return (
+    <button
+      type="button"
+      onClick={() => onSortChange({ sortBy: sortKey, sortOrder: next })}
+      className="-ml-2 inline-flex h-8 items-center gap-1.5 rounded-md px-2 hover:bg-muted hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+    >
+      {label}
+      <Icon className={cn("size-3.5", active ? "text-foreground" : "opacity-50")} aria-hidden />
+    </button>
+  );
 }
 
 export function DataTable<T>({
@@ -40,6 +79,8 @@ export function DataTable<T>({
   onRetry,
   empty,
   skeletonRows = 6,
+  sort,
+  onSortChange,
 }: DataTableProps<T>) {
   if (error && !rows) return <ErrorState message={error.message} onRetry={onRetry} />;
   if (!isLoading && rows?.length === 0) return <>{empty}</>;
@@ -56,9 +97,20 @@ export function DataTable<T>({
                 <TableHead
                   key={column.id}
                   scope="col"
+                  aria-sort={
+                    column.sortKey && sort?.sortBy === column.sortKey
+                      ? sort.sortOrder === "asc"
+                        ? "ascending"
+                        : "descending"
+                      : undefined
+                  }
                   className={cn("h-11 px-4 text-xs font-semibold text-muted-foreground", column.headerClassName)}
                 >
-                  {column.header}
+                  {column.sortKey && sort && onSortChange ? (
+                    <SortHeader label={column.header} sortKey={column.sortKey} sort={sort} onSortChange={onSortChange} />
+                  ) : (
+                    column.header
+                  )}
                 </TableHead>
               ))}
             </TableRow>

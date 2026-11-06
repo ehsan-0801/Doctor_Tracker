@@ -4,8 +4,8 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useMemo } from "react";
 
 /**
- * Keeps list filters in the URL so they survive refresh, back/forward and can be
- * shared. Changing any filter other than `page` resets to page 1.
+ * Keeps list state (filters, sort, page) in the URL so it survives refresh and
+ * back/forward and can be shared. Changing anything other than `page` resets to page 1.
  */
 export function useUrlFilters<K extends string>(keys: readonly K[]) {
   const router = useRouter();
@@ -35,9 +35,31 @@ export function useUrlFilters<K extends string>(keys: readonly K[]) {
     [pathname, router, searchParams],
   );
 
-  const clearFilters = useCallback(() => router.replace(pathname, { scroll: false }), [pathname, router]);
+  return { values, page, setFilters };
+}
 
-  const activeCount = keys.filter((key) => key !== "search" && values[key]).length;
+/** Validated sort from URL values; defaults to newest first. */
+export function readSort(sortBy: string | undefined, sortOrder: string | undefined) {
+  return {
+    sortBy: sortBy === "name" ? ("name" as const) : ("createdAt" as const),
+    sortOrder: sortOrder === "asc" ? ("asc" as const) : ("desc" as const),
+  };
+}
 
-  return { values, page, setFilters, clearFilters, activeCount };
+/** Count and clear helpers for the subset of URL keys that are filters. */
+export function filterState<K extends string>(
+  values: Record<K, string | undefined>,
+  filterKeys: readonly K[],
+  setFilters: (updates: Partial<Record<K, undefined>>) => void,
+  /** Dependent keys removed together with the filters (one URL update). */
+  alsoClear: readonly K[] = [],
+) {
+  const active = filterKeys.filter((key) => values[key]);
+  return {
+    hasFilters: active.length > 0,
+    // The search box is always visible, so the mobile "Filters" badge counts the rest.
+    panelCount: active.filter((key) => key !== "search").length,
+    clear: () =>
+      setFilters(Object.fromEntries([...filterKeys, ...alsoClear].map((key) => [key, undefined])) as Partial<Record<K, undefined>>),
+  };
 }

@@ -10,6 +10,7 @@ import { FilterBar } from "@/components/shared/filter-bar";
 import { FilterSelect } from "@/components/shared/filter-select";
 import { Pagination } from "@/components/shared/pagination";
 import { SearchInput } from "@/components/shared/search-input";
+import { SortSelect } from "@/components/shared/sort-select";
 import { EmptyState } from "@/components/shared/states";
 import { ConfirmDialog } from "@/components/shared/confirm-dialog";
 import { Badge } from "@/components/ui/badge";
@@ -22,7 +23,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Label } from "@/components/ui/label";
-import { useUrlFilters } from "@/hooks/use-url-filters";
+import { filterState, readSort, useUrlFilters } from "@/hooks/use-url-filters";
 import { doctorsApi, patientsApi } from "@/lib/api/endpoints";
 import { queryKeys } from "@/lib/api/query-keys";
 import { formatDate } from "@/lib/format";
@@ -32,7 +33,9 @@ import { PatientFormDialog } from "./patient-form-dialog";
 import { usePatientMutations } from "./use-patient-mutations";
 
 const PAGE_SIZE = 10;
-const FILTER_KEYS = ["search", "condition", "doctorId", "doctorName", "startDate", "endDate"] as const;
+const FILTER_KEYS = ["search", "condition", "doctorId", "startDate", "endDate"] as const;
+// doctorName only labels the selected doctor in the picker.
+const URL_KEYS = [...FILTER_KEYS, "doctorName", "sortBy", "sortOrder"] as const;
 const ALL_DOCTORS: DoctorChoice = { _id: "", name: "All doctors" };
 const UNASSIGNED: DoctorChoice = { _id: "unassigned", name: "Unassigned" };
 
@@ -47,11 +50,13 @@ type Pending =
  * scoped to one doctor (doctor details), where "Remove from doctor" is offered.
  */
 export function PatientsPanel({ doctor }: { doctor?: DoctorSummary }) {
-  const { values, page, setFilters, clearFilters, activeCount } = useUrlFilters(FILTER_KEYS);
+  const { values, page, setFilters } = useUrlFilters(URL_KEYS);
   const [pending, setPending] = useState<Pending>(null);
   const { remove, unassign } = usePatientMutations();
 
+  const sort = readSort(values.sortBy, values.sortOrder);
   const params: PatientListParams = {
+    ...sort,
     page,
     limit: PAGE_SIZE,
     search: values.search,
@@ -76,7 +81,7 @@ export function PatientsPanel({ doctor }: { doctor?: DoctorSummary }) {
 
   const selectedDoctor: DoctorChoice | null =
     values.doctorId === "unassigned" ? UNASSIGNED : values.doctorId ? { _id: values.doctorId, name: values.doctorName ?? "Selected doctor" } : null;
-  const hasFilters = Boolean(values.search) || activeCount > 0;
+  const { hasFilters, panelCount, clear: clearFilters } = filterState(values, FILTER_KEYS, setFilters, ["doctorName"]);
 
   const actions = (patient: Patient) => (
     <DropdownMenu>
@@ -114,10 +119,10 @@ export function PatientsPanel({ doctor }: { doctor?: DoctorSummary }) {
     );
 
   const columns: Column<Patient>[] = [
-    { id: "name", header: "Patient", cell: (p) => <span className="font-medium text-foreground">{p.name}</span> },
+    { id: "name", header: "Patient", sortKey: "name", cell: (p) => <span className="font-medium text-foreground">{p.name}</span> },
     { id: "condition", header: "Condition", cell: (p) => <Badge variant="secondary" className="font-normal">{p.condition}</Badge> },
     ...(doctor ? [] : [{ id: "doctor", header: "Doctor", cell: doctorCell }]),
-    { id: "registered", header: "Registered", cell: (p) => <span className="text-muted-foreground">{formatDate(p.createdAt)}</span> },
+    { id: "registered", header: "Registered", sortKey: "createdAt", cell: (p) => <span className="text-muted-foreground">{formatDate(p.createdAt)}</span> },
     { id: "actions", header: <span className="sr-only">Actions</span>, cell: actions, className: "w-14 text-right", headerClassName: "w-14" },
   ];
 
@@ -133,7 +138,7 @@ export function PatientsPanel({ doctor }: { doctor?: DoctorSummary }) {
               onSearch={(search) => setFilters({ search })}
             />
           }
-          activeCount={activeCount}
+          activeCount={panelCount}
           canClear={hasFilters}
           onClear={clearFilters}
         >
@@ -168,6 +173,11 @@ export function PatientsPanel({ doctor }: { doctor?: DoctorSummary }) {
             endDate={values.endDate}
             onChange={(range) => setFilters(range)}
           />
+          <SortSelect
+            id="sort-patients"
+            sort={sort}
+            onChange={(next) => setFilters({ sortBy: next.sortBy, sortOrder: next.sortOrder, page: 1 })}
+          />
         </FilterBar>
 
         <DataTable
@@ -179,6 +189,8 @@ export function PatientsPanel({ doctor }: { doctor?: DoctorSummary }) {
           isFetching={patients.isFetching}
           error={patients.error}
           onRetry={() => patients.refetch()}
+          sort={sort}
+          onSortChange={(next) => setFilters({ sortBy: next.sortBy, sortOrder: next.sortOrder, page: 1 })}
           renderMobileCard={(p) => (
             <div className="flex items-start gap-3">
               <div className="min-w-0 flex-1 space-y-1.5">

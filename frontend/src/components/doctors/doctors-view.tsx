@@ -12,6 +12,7 @@ import { FilterBar } from "@/components/shared/filter-bar";
 import { FilterSelect } from "@/components/shared/filter-select";
 import { Pagination } from "@/components/shared/pagination";
 import { SearchInput } from "@/components/shared/search-input";
+import { SortSelect } from "@/components/shared/sort-select";
 import { EmptyState } from "@/components/shared/states";
 import { Button } from "@/components/ui/button";
 import {
@@ -20,7 +21,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { useUrlFilters } from "@/hooks/use-url-filters";
+import { filterState, readSort, useUrlFilters } from "@/hooks/use-url-filters";
 import { doctorsApi } from "@/lib/api/endpoints";
 import { queryKeys } from "@/lib/api/query-keys";
 import { formatDate, formatNumber } from "@/lib/format";
@@ -30,13 +31,16 @@ import { DoctorFormDialog } from "./doctor-form-dialog";
 
 const PAGE_SIZE = 10;
 const FILTER_KEYS = ["search", "specialization", "hospital", "startDate", "endDate"] as const;
+const URL_KEYS = [...FILTER_KEYS, "sortBy", "sortOrder"] as const;
 
 export function DoctorsView() {
   const router = useRouter();
-  const { values, page, setFilters, clearFilters, activeCount } = useUrlFilters(FILTER_KEYS);
+  const { values, page, setFilters } = useUrlFilters(URL_KEYS);
   const [createOpen, setCreateOpen] = useState(false);
 
-  const params: DoctorListParams = { page, limit: PAGE_SIZE, ...values };
+  const { sortBy: _sb, sortOrder: _so, ...filterValues } = values;
+  const sort = readSort(_sb, _so);
+  const params: DoctorListParams = { page, limit: PAGE_SIZE, ...filterValues, ...sort };
   const doctors = useQuery({
     queryKey: queryKeys.doctors.list(params),
     queryFn: () => doctorsApi.list(params),
@@ -49,7 +53,8 @@ export function DoctorsView() {
     if (totalPages > 0 && page > totalPages && !doctors.isFetching) setFilters({ page: totalPages });
   }, [page, totalPages, doctors.isFetching, setFilters]);
 
-  const hasFilters = Boolean(values.search) || activeCount > 0;
+  // Sorting is kept when filters are cleared.
+  const { hasFilters, panelCount, clear: clearFilters } = filterState(values, FILTER_KEYS, setFilters);
   const toOptions = (list: string[] | undefined) => (list ?? []).map((v) => ({ value: v, label: v }));
 
   const actions = (d: Doctor) => (
@@ -74,6 +79,7 @@ export function DoctorsView() {
     {
       id: "doctor",
       header: "Doctor",
+      sortKey: "name",
       cell: (d) => (
         <Link href={`/doctors/${d._id}`} className="group flex items-center gap-3">
           <DoctorAvatar name={d.name} />
@@ -102,7 +108,7 @@ export function DoctorsView() {
       headerClassName: "hidden lg:table-cell",
     },
     { id: "patients", header: "Patients", cell: (d) => <span className="tabular-nums">{formatNumber(d.patientCount)}</span>, className: "text-right", headerClassName: "text-right" },
-    { id: "created", header: "Created", cell: (d) => <span className="whitespace-nowrap text-muted-foreground">{formatDate(d.createdAt)}</span> },
+    { id: "created", header: "Created", sortKey: "createdAt", cell: (d) => <span className="whitespace-nowrap text-muted-foreground">{formatDate(d.createdAt)}</span> },
     { id: "actions", header: <span className="sr-only">Actions</span>, cell: actions, className: "w-14 text-right", headerClassName: "w-14" },
   ];
 
@@ -128,7 +134,7 @@ export function DoctorsView() {
               onSearch={(search) => setFilters({ search })}
             />
           }
-          activeCount={activeCount}
+          activeCount={panelCount}
           canClear={hasFilters}
           onClear={clearFilters}
         >
@@ -155,6 +161,11 @@ export function DoctorsView() {
             endDate={values.endDate}
             onChange={(range) => setFilters(range)}
           />
+          <SortSelect
+            id="sort-doctors"
+            sort={sort}
+            onChange={(next) => setFilters({ sortBy: next.sortBy, sortOrder: next.sortOrder, page: 1 })}
+          />
         </FilterBar>
 
         <DataTable
@@ -166,6 +177,8 @@ export function DoctorsView() {
           isFetching={doctors.isFetching}
           error={doctors.error}
           onRetry={() => doctors.refetch()}
+          sort={sort}
+          onSortChange={(next) => setFilters({ sortBy: next.sortBy, sortOrder: next.sortOrder, page: 1 })}
           renderMobileCard={(d) => (
             <div className="flex items-start gap-3">
               <DoctorAvatar name={d.name} />

@@ -19,7 +19,7 @@ import { hashPassword } from "../services/auth.service.js";
 const seedEnv = z
   .object({
     MONGODB_URI: z.string().min(1),
-    ADMIN_EMAIL: z.email().trim().toLowerCase(),
+    ADMIN_EMAIL: z.string().trim().toLowerCase().pipe(z.email()),
     ADMIN_PASSWORD: z.string().min(8, "ADMIN_PASSWORD must be at least 8 characters"),
   })
   .parse(process.env);
