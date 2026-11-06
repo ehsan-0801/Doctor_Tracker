@@ -7,6 +7,7 @@ import { io, type Socket } from "socket.io-client";
 import { toast } from "sonner";
 import { trackingApi } from "@/lib/api/endpoints";
 import { queryKeys } from "@/lib/api/query-keys";
+import { chatWidget } from "@/lib/chat-widget";
 import type { AppNotification } from "@/types/audit";
 import { messagePreview, type ChatMessage, type ConversationSummary, type PresenceView } from "@/types/tracking";
 
@@ -92,16 +93,22 @@ export function RealtimeProvider({ children }: { children: React.ReactNode }) {
 
     s.on("notification:new", (notification: AppNotification) => {
       queryClient.setQueryData<{ items: AppNotification[]; unread: number; hasMore: boolean }>(queryKeys.notifications, (data) =>
-        data && !data.items.some((n) => n._id === notification._id)
-          ? { ...data, items: [notification, ...data.items], unread: data.unread + 1 }
-          : data,
+        data && !data.items.some((n) => n._id === notification._id) ? { ...data, items: [notification, ...data.items], unread: data.unread + 1 } : data,
       );
+      // Messages open in the chat widget (or the Messages page when already there).
+      const conversationId = notification.type === "message" ? new URLSearchParams(notification.link.split("?")[1]).get("c") : null;
+      const onMessagesPage = window.location.pathname.startsWith("/messages");
+      const widget = chatWidget.get();
       // No toast for a message in the conversation that is already open.
-      const here = window.location.pathname + window.location.search;
-      if (notification.type === "message" && notification.link === here) return;
+      if (
+        conversationId &&
+        (onMessagesPage ? notification.link === window.location.pathname + window.location.search : widget.open && widget.conversationId === conversationId)
+      )
+        return;
+      const openIt = () => (conversationId && !onMessagesPage ? chatWidget.open(conversationId) : routerRef.current.push(notification.link));
       toast(notification.title, {
         description: notification.body,
-        action: notification.link ? { label: "Open", onClick: () => routerRef.current.push(notification.link) } : undefined,
+        action: notification.link ? { label: "Open", onClick: openIt } : undefined,
       });
     });
 

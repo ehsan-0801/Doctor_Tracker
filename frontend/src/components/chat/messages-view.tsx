@@ -67,11 +67,7 @@ export function MessagesView() {
   const activeId = searchParams.get("c");
   const { user } = useSession();
   const queryClient = useQueryClient();
-
-  const conversations = useQuery({
-    queryKey: queryKeys.chat.conversations,
-    queryFn: chatApi.conversations,
-  });
+  const conversations = useQuery({ queryKey: queryKeys.chat.conversations, queryFn: chatApi.conversations });
   const open = (id: string | null) => router.replace(id ? `${pathname}?c=${id}` : pathname, { scroll: false });
 
   const startWith = async (contact: ChatContact) => {
@@ -91,56 +87,7 @@ export function MessagesView() {
       <PageHeader title="Messages" description="Real-time messages with your care team." actions={<NewChatButton onPick={startWith} />} />
       <div className="grid h-[calc(100dvh-14rem)] min-h-[480px] overflow-hidden rounded-xl border bg-card md:grid-cols-[320px_1fr]">
         <aside className={cn("flex min-h-0 flex-col border-r", activeId && "hidden md:flex")} aria-label="Conversations">
-          {conversations.error ? (
-            <ErrorState message={conversations.error.message} onRetry={() => conversations.refetch()} />
-          ) : conversations.isLoading ? (
-            <div className="space-y-3 p-4">
-              {Array.from({ length: 6 }, (_, i) => (
-                <Skeleton key={i} className="h-14" />
-              ))}
-            </div>
-          ) : !conversations.data?.length ? (
-            <EmptyState icon={MessagesSquare} title="No conversations yet" description="Start one with “New message”." />
-          ) : (
-            <ul className="flex-1 overflow-y-auto">
-              {conversations.data.map((c) => (
-                <li key={c._id}>
-                  <button
-                    type="button"
-                    onClick={() => open(c._id)}
-                    aria-current={c._id === activeId ? "true" : undefined}
-                    className={cn(
-                      "flex w-full items-center gap-3 border-b px-4 py-3 text-left hover:bg-muted/60",
-                      c._id === activeId && "bg-accent text-accent-foreground hover:bg-accent [&_.text-muted-foreground]:text-accent-foreground/70",
-                    )}
-                  >
-                    <span className="relative">
-                      <UserAvatar name={c.contact.name} photoUrl={c.contact.photoUrl} className="size-11" />
-                      <OnlineDot online={c.contact.online} />
-                    </span>
-                    <span className="min-w-0 flex-1">
-                      <span className="flex items-baseline justify-between gap-2">
-                        <span className={cn("truncate text-sm", c.unread ? "font-semibold" : "font-medium")}>{c.contact.name}</span>
-                        <span className="shrink-0 text-[11px] text-muted-foreground">{shortTime(c.lastMessageAt)}</span>
-                      </span>
-                      <span className="flex items-center gap-2">
-                        <span className={cn("truncate text-xs", c.unread ? "text-foreground" : "text-muted-foreground")}>
-                          {c.lastSenderId === user?.id ? "You: " : ""}
-                          {c.lastMessage}
-                        </span>
-                        {c.unread > 0 && (
-                          <span className="ml-auto flex h-5 min-w-5 items-center justify-center rounded-full bg-primary px-1.5 text-[11px] font-semibold text-primary-foreground">
-                            {c.unread}
-                            <span className="sr-only"> unread</span>
-                          </span>
-                        )}
-                      </span>
-                    </span>
-                  </button>
-                </li>
-              ))}
-            </ul>
-          )}
+          <ConversationList activeId={activeId} onOpen={open} />
         </aside>
         <section className={cn("min-h-0 flex-col", activeId ? "flex" : "hidden md:flex")} aria-label="Conversation">
           {activeId && user ? (
@@ -160,7 +107,67 @@ export function MessagesView() {
   );
 }
 
-function NewChatButton({ onPick }: { onPick: (contact: ChatContact) => void }) {
+/** Conversations with previews and unread counts (shared by the Messages page and the chat widget). */
+export function ConversationList({ activeId, onOpen }: { activeId: string | null; onOpen: (id: string) => void }) {
+  const { user } = useSession();
+  const conversations = useQuery({ queryKey: queryKeys.chat.conversations, queryFn: chatApi.conversations });
+  return (
+    <>
+      {conversations.error ? (
+        <ErrorState message={conversations.error.message} onRetry={() => conversations.refetch()} />
+      ) : conversations.isLoading ? (
+        <div className="space-y-3 p-4">
+          {Array.from({ length: 6 }, (_, i) => (
+            <Skeleton key={i} className="h-14" />
+          ))}
+        </div>
+      ) : !conversations.data?.length ? (
+        <EmptyState icon={MessagesSquare} title="No conversations yet" description="Start one with “New message”." />
+      ) : (
+        <ul className="flex-1 overflow-y-auto">
+          {conversations.data.map((c) => (
+            <li key={c._id}>
+              <button
+                type="button"
+                onClick={() => onOpen(c._id)}
+                aria-current={c._id === activeId ? "true" : undefined}
+                className={cn(
+                  "flex w-full items-center gap-3 border-b px-4 py-3 text-left hover:bg-muted/60",
+                  c._id === activeId && "bg-accent text-accent-foreground hover:bg-accent [&_.text-muted-foreground]:text-accent-foreground/70",
+                )}
+              >
+                <span className="relative">
+                  <UserAvatar name={c.contact.name} photoUrl={c.contact.photoUrl} className="size-11" />
+                  <OnlineDot online={c.contact.online} />
+                </span>
+                <span className="min-w-0 flex-1">
+                  <span className="flex items-baseline justify-between gap-2">
+                    <span className={cn("truncate text-sm", c.unread ? "font-semibold" : "font-medium")}>{c.contact.name}</span>
+                    <span className="shrink-0 text-[11px] text-muted-foreground">{shortTime(c.lastMessageAt)}</span>
+                  </span>
+                  <span className="flex items-center gap-2">
+                    <span className={cn("truncate text-xs", c.unread ? "text-foreground" : "text-muted-foreground")}>
+                      {c.lastSenderId === user?.id ? "You: " : ""}
+                      {c.lastMessage}
+                    </span>
+                    {c.unread > 0 && (
+                      <span className="ml-auto flex h-5 min-w-5 items-center justify-center rounded-full bg-primary px-1.5 text-[11px] font-semibold text-primary-foreground">
+                        {c.unread}
+                        <span className="sr-only"> unread</span>
+                      </span>
+                    )}
+                  </span>
+                </span>
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+    </>
+  );
+}
+
+export function NewChatButton({ onPick, compact = false }: { onPick: (contact: ChatContact) => void; compact?: boolean }) {
   const [open, setOpen] = useState(false);
   const contacts = useQuery({
     queryKey: queryKeys.chat.contacts,
@@ -170,9 +177,15 @@ function NewChatButton({ onPick }: { onPick: (contact: ChatContact) => void }) {
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
-        <Button size="lg" className="h-10 px-4">
-          <MessageSquarePlus aria-hidden /> New message
-        </Button>
+        {compact ? (
+          <Button variant="ghost" size="icon" aria-label="New message">
+            <MessageSquarePlus />
+          </Button>
+        ) : (
+          <Button size="lg" className="h-10 px-4">
+            <MessageSquarePlus aria-hidden /> New message
+          </Button>
+        )}
       </PopoverTrigger>
       <PopoverContent align="end" className="w-80 p-0">
         <Command>
@@ -207,12 +220,27 @@ function NewChatButton({ onPick }: { onPick: (contact: ChatContact) => void }) {
 
 type ThreadPage = Awaited<ReturnType<typeof chatApi.messages>>;
 
-function Thread({ conversationId, myId, onBack, summary }: { conversationId: string; myId: string; onBack: () => void; summary?: ConversationSummary }) {
+export function Thread({
+  conversationId,
+  myId,
+  onBack,
+  summary,
+  compact = false,
+  actions,
+}: {
+  conversationId: string;
+  myId: string;
+  onBack: () => void;
+  summary?: ConversationSummary;
+  /** Widget layout: back button always visible. */
+  compact?: boolean;
+  actions?: React.ReactNode;
+}) {
   const queryClient = useQueryClient();
   const [text, setText] = useState("");
   const [sending, setSending] = useState(false);
   const [pending, setPending] = useState<Pending | null>(null);
-  const bottomRef = useRef<HTMLDivElement>(null);
+  const scrollRef = useRef<HTMLDivElement>(null);
   const textRef = useRef<HTMLTextAreaElement>(null);
   const imageInput = useRef<HTMLInputElement>(null);
   const fileInput = useRef<HTMLInputElement>(null);
@@ -255,7 +283,8 @@ function Thread({ conversationId, myId, onBack, summary }: { conversationId: str
   }, [conversationId, lastId, queryClient]);
 
   useLayoutEffect(() => {
-    bottomRef.current?.scrollIntoView({ block: "end" });
+    const el = scrollRef.current;
+    if (el) el.scrollTop = el.scrollHeight;
   }, [lastId]);
 
   const loadOlder = async () => {
@@ -361,7 +390,7 @@ function Thread({ conversationId, myId, onBack, summary }: { conversationId: str
   return (
     <>
       <header className="flex items-center gap-3 border-b px-4 py-3">
-        <Button variant="ghost" size="icon" className="md:hidden" onClick={onBack} aria-label="Back to conversations">
+        <Button variant="ghost" size="icon" className={cn(!compact && "md:hidden")} onClick={onBack} aria-label="Back to conversations">
           <ArrowLeft />
         </Button>
         {contact ? (
@@ -370,7 +399,7 @@ function Thread({ conversationId, myId, onBack, summary }: { conversationId: str
               <UserAvatar name={contact.name} photoUrl={contact.photoUrl} className="size-10" />
               <OnlineDot online={contact.online} />
             </span>
-            <div className="min-w-0">
+            <div className="min-w-0 flex-1">
               <p className="truncate font-semibold">{contact.name}</p>
               <p className="text-xs text-muted-foreground">
                 {ROLE_LABELS[contact.role]} · {contact.online ? "Online" : "Offline"}
@@ -378,11 +407,12 @@ function Thread({ conversationId, myId, onBack, summary }: { conversationId: str
             </div>
           </>
         ) : (
-          <Skeleton className="h-10 w-48" />
+          <Skeleton className="h-10 flex-1" />
         )}
+        {actions && <div className="ml-auto flex shrink-0 items-center">{actions}</div>}
       </header>
 
-      <div className="flex-1 overflow-y-auto px-4 py-4" aria-live="polite" aria-relevant="additions">
+      <div ref={scrollRef} className="min-h-0 flex-1 overflow-y-auto px-4 py-4" aria-live="polite" aria-relevant="additions">
         {latest.isLoading ? (
           <div className="space-y-3">
             {Array.from({ length: 5 }, (_, i) => (
@@ -434,7 +464,6 @@ function Thread({ conversationId, myId, onBack, summary }: { conversationId: str
             })}
           </ol>
         )}
-        <div ref={bottomRef} />
       </div>
 
       <form

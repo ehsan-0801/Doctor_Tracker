@@ -3,6 +3,7 @@ import { AreaMarker } from "@/components/layout/area-marker";
 import { RealtimeProvider } from "@/lib/realtime";
 import { AppHeader } from "@/components/layout/app-header";
 import { AppSidebar } from "@/components/layout/app-sidebar";
+import { ChatWidget } from "@/components/chat/chat-widget";
 
 export default function DashboardLayout({ children }: LayoutProps<"/">) {
   // The background gradient paints the sidebar column for the full page height (the sidebar itself is fixed).
@@ -26,10 +27,14 @@ export default function DashboardLayout({ children }: LayoutProps<"/">) {
         <Suspense fallback={<div className="sticky top-0 z-20 h-16 border-b bg-card" aria-hidden />}>
           <AppHeader />
         </Suspense>
-        <main id="main-content" className="mx-auto w-full max-w-[1400px] flex-1 px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
+        <main id="main-content" className="mx-auto w-full max-w-[1400px] flex-1 px-4 pt-6 pb-24 sm:px-6 lg:px-8 lg:pt-8">
           {children}
         </main>
       </div>
+      {/* Floating chat; main content keeps bottom padding so the launcher never hides the last row. */}
+      <Suspense>
+        <ChatWidget />
+      </Suspense>
     </div>
     </RealtimeProvider>
   );
