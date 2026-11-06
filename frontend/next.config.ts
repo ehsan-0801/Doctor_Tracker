@@ -2,7 +2,8 @@ import type { NextConfig } from "next";
 
 // Express API origin. The browser always calls same-origin `/api/*`; Next.js
 // proxies those requests so the session cookie stays first-party (no CORS).
-const apiUrl = process.env.API_URL ?? "http://localhost:4000";
+// Trailing slashes are stripped so "https://api.example.com/" also works.
+const apiUrl = (process.env.API_URL ?? "http://localhost:4000").replace(/\/+$/, "");
 
 const nextConfig: NextConfig = {
   // The end-to-end suite builds into its own folder so it never overwrites the normal build.
